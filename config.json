@@ -1,0 +1,26 @@
+{
+  "audio": {
+    "sample_rate": 16000,
+    "channels": 1,
+    "frame_size_ms": 10
+  },
+  "aec": {
+    "enabled": true,
+    "mobile_mode": false,
+    "high_pass_filter_enabled": true
+  },
+  "gain_control": {
+    "agc1_enabled": true,
+    "agc1_mode": "adaptive_analog",
+    "agc2_enabled": true
+  },
+  "sys_out_gain": {
+    "pre_gain": 1.0,   
+    "post_gain_ratio": 1.0  
+  },
+  "output": {
+    "wav_dump_enabled": true,
+    "wav_dump_directory": "./output",
+    "description": "Set wav_dump_enabled to true and specify directory to enable audio dumping in wav files"
+  }
+}

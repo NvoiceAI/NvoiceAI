@@ -1,0 +1,12 @@
+prefix=/Users/yuner84/workspace/NvoiceSdk/webrtc_apm_deps
+includedir=${prefix}/include
+libdir=${prefix}/lib
+
+Name: webrtc-apm
+Description: WebRTC Audio Processing library
+Version: 2.1
+Requires: absl_base >= 20240722
+Requires.private: absl_flags, absl_strings, absl_numeric, absl_synchronization, absl_bad_optional_access
+Libs: -L${libdir} -lwebrtc-apm
+Libs.private: -framework Foundation
+Cflags: -I${includedir}/webrtc-apm -DWEBRTC_LIBRARY_IMPL -DWEBRTC_POSIX

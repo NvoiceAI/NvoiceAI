@@ -3,6 +3,8 @@ project(NvoiceAiRealtimeSimple)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_C_STANDARD 99)
+set(CMAKE_C_STANDARD_REQUIRED ON)
 
 option(SAVE_AUDIO_FILES "Enable saving of audio frames to WAV files (mic, near, far, mix)" OFF)
 
@@ -47,6 +49,39 @@ target_link_libraries(nvoiceai_realtime_simple PRIVATE
 )
 
 target_link_directories(nvoiceai_realtime_simple PRIVATE
+    ${SDK_LIB_DIR}
+    ${PORTAUDIO_LIBRARY_DIRS}
+    ${SNDFILE_LIBRARY_DIRS}
+)
+
+# Build C version
+add_executable(nvoiceai_realtime_simple_c 
+    examples/nvoiceai_realtime_simple.c
+    utilities/config_loader.c
+)
+
+if(SAVE_AUDIO_FILES)
+    target_compile_definitions(nvoiceai_realtime_simple_c PRIVATE SAVE_AUDIO_FILES=1)
+    message(STATUS "SAVE_AUDIO_FILES=ON -> enabling audio WAV file output for C version")
+else()
+    message(STATUS "SAVE_AUDIO_FILES=OFF -> WAV file output disabled for C version")
+endif()
+
+target_include_directories(nvoiceai_realtime_simple_c PRIVATE
+    ${SDK_INCLUDE_DIR}
+    ${PORTAUDIO_INCLUDE_DIRS}
+    ${SNDFILE_INCLUDE_DIRS}
+)
+
+target_link_libraries(nvoiceai_realtime_simple_c PRIVATE
+    "${SDK_LIB_DIR}/libnvoiceai_sdk.a"
+    ${WEBRTC_APM_LIB}
+    ${PORTAUDIO_LIBRARIES}
+    ${SNDFILE_LIBRARIES}
+    c++
+)
+
+target_link_directories(nvoiceai_realtime_simple_c PRIVATE
     ${SDK_LIB_DIR}
     ${PORTAUDIO_LIBRARY_DIRS}
     ${SNDFILE_LIBRARY_DIRS}

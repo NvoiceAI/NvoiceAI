@@ -33,9 +33,9 @@ public:
     void setSystemGain(float gain);
     float getSystemGain() const;
 
-    // Enable WAV file dumping for audio debugging (requires DUMP_WAV_FILES build flag)
-    // Specify the directory to store output files (e.g., "./output")
-    bool enableWavDump(const std::string& output_dir);
+    // Enable audio file saving for audio debugging (requires SAVE_AUDIO_FILES build flag)
+    // Specify the directory to store the output files (e.g., "./output")
+    bool enableSaveAudioFiles(const std::string& output_dir);
 
 private:
     struct Impl;

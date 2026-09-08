@@ -168,7 +168,7 @@ static void capture_postprocess_callback(
 
 int main() {
     std::cout << "========================================\n";
-    std::cout << "Nvoice SDK - Simple AEC Demo\n";
+    std::cout << "NvoiceAI SDK Realtime Simple Demo C++\n";
     std::cout << "========================================\n\n";
     
     // Load configuration from config.json
@@ -196,12 +196,12 @@ int main() {
     
     // Get output configuration
     const auto& output_config = ConfigManager::getOutputConfig();
-    std::string output_dir = output_config.wav_dump_directory;
-    bool wav_dump_enabled = output_config.wav_dump_enabled;
+    std::string output_dir = output_config.save_audio_files_directory;
+    bool save_audio_files_enabled = output_config.save_audio_files_enabled;
     
 #ifdef SAVE_AUDIO_FILES
     // Initialize WAV file output if enabled
-    if (wav_dump_enabled) {
+    if (save_audio_files_enabled) {
         std::cout << "Initializing audio file output...\n";
         if (!init_wav_files(output_dir, SAMPLE_RATE)) {
             std::cerr << "Error: Failed to initialize WAV files\n";
@@ -222,7 +222,7 @@ int main() {
     if (!sdk.initAudioProcessing()) {
         std::cerr << "Error: Failed to initialize audio processing\n";
 #ifdef SAVE_AUDIO_FILES
-        if (wav_dump_enabled) {
+        if (save_audio_files_enabled) {
             close_wav_files();
         }
 #endif
@@ -241,7 +241,7 @@ int main() {
     if (!sdk.start(capture_postprocess_callback, nullptr)) {
         std::cerr << "Error: Failed to start SDK\n";
 #ifdef SAVE_AUDIO_FILES
-        if (wav_dump_enabled) {
+        if (save_audio_files_enabled) {
             close_wav_files();
         }
 #endif
@@ -259,7 +259,7 @@ int main() {
     sdk.stop();
     
 #ifdef SAVE_AUDIO_FILES
-    if (wav_dump_enabled) {
+    if (save_audio_files_enabled) {
         std::cout << "Closing audio files...\n";
         close_wav_files();
         std::cout << "Audio files saved to: " << output_dir << "\n";

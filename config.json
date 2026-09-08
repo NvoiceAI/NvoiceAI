@@ -19,8 +19,8 @@
     "post_gain_ratio": 1.0  
   },
   "output": {
-    "wav_dump_enabled": true,
-    "wav_dump_directory": "./output",
-    "description": "Set wav_dump_enabled to true and specify directory to enable audio dumping in wav files"
+    "save_audio_files_enabled": true,
+    "save_audio_files_directory": "./output",
+    "description": "Set save_audio_files_enabled to true and specify directory to enable audio debugging"
   }
 }

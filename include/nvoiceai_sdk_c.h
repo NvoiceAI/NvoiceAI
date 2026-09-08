@@ -22,10 +22,9 @@ int nvoiceai_sdk_is_aec_enabled(nvoiceai_handle_t h);
 // Control system playback gain from C API (1.0 = unity)
 void nvoiceai_sdk_set_system_gain(nvoiceai_handle_t h, float gain);
 float nvoiceai_sdk_get_system_gain(nvoiceai_handle_t h);
-// Enable WAV file dumping for audio debugging (requires DUMP_WAV_FILES build flag)
+// Enable audio file saving for audio debugging (requires SAVE_AUDIO_FILES build flag)
 // Specify the directory to store the output files (e.g., "./output")
-// Returns 0 on success, -1 on failure
-int nvoiceai_sdk_enable_wav_dump(nvoiceai_handle_t h, const char* output_dir);
+int nvoiceai_sdk_enable_audio_file_saving(nvoiceai_handle_t h, const char* output_dir);
 
 #ifdef __cplusplus
 }

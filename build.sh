@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Build script for NvoiceAI SDK Realtime Simple Demo
+# Build script for NvoiceAI SDK Realtime Simple Demo in C/C++
 # 
 # Usage:
 #   ./build.sh                              # Build with default options
@@ -10,7 +10,7 @@
 set -e  # Exit on error
 
 echo "=========================================="
-echo "NvoiceAI SDK Realtime Simple Demo - Build Script"
+echo "NvoiceAI SDK Realtime Simple Demo C/C++ - Build Script"
 echo "=========================================="
 echo ""
 
@@ -57,10 +57,17 @@ echo -e "${GREEN}=========================================="
 echo "Build Complete!"
 echo "==========================================${NC}"
 echo ""
-echo "Executable location:"
+echo "Executables built:"
+echo "  C++ version:"
+echo "    $BUILD_DIR/nvoiceai_realtime_simple"
+echo ""
+echo "  C version:"
+echo "    $BUILD_DIR/nvoiceai_realtime_simple_c"
+echo ""
+echo "To run the C++ demo:"
 echo "  $BUILD_DIR/nvoiceai_realtime_simple"
 echo ""
-echo "To run the demo:"
-echo "  $BUILD_DIR/nvoiceai_realtime_simple"
+echo "To run the C demo:"
+echo "  $BUILD_DIR/nvoiceai_realtime_simple_c"
 echo ""
 

@@ -36,8 +36,8 @@ public:
     };
     
     struct OutputConfig {
-        bool wav_dump_enabled = false;
-        std::string wav_dump_directory = "./output";
+        bool save_audio_files_enabled = false;
+        std::string save_audio_files_directory = "./output";
     };
     
     /**

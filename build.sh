@@ -34,11 +34,15 @@ if [ $# -gt 0 ]; then
     echo ""
 fi
 
-# Create build directory
-if [ ! -d "$BUILD_DIR" ]; then
-    echo -e "${BLUE}Creating build directory...${NC}"
-    mkdir -p "$BUILD_DIR"
+# Remove existing build directory for clean build
+if [ -d "$BUILD_DIR" ]; then
+    echo -e "${BLUE}Removing existing build directory for clean build...${NC}"
+    rm -rf "$BUILD_DIR"
 fi
+
+# Create build directory
+echo -e "${BLUE}Creating build directory...${NC}"
+mkdir -p "$BUILD_DIR"
 
 # Change to build directory
 cd "$BUILD_DIR"

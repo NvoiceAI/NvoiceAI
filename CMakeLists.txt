@@ -26,6 +26,7 @@ find_package(PkgConfig REQUIRED)
 pkg_check_modules(PORTAUDIO REQUIRED portaudio-2.0)
 pkg_check_modules(SNDFILE REQUIRED sndfile)
 
+# C++ realtime example
 add_executable(nvoiceai_realtime_simple examples/nvoiceai_realtime_simple.cpp)
 
 if(SAVE_AUDIO_FILES)
@@ -54,7 +55,7 @@ target_link_directories(nvoiceai_realtime_simple PRIVATE
     ${SNDFILE_LIBRARY_DIRS}
 )
 
-# Build C version
+# C realtime example
 add_executable(nvoiceai_realtime_simple_c 
     examples/nvoiceai_realtime_simple.c
     utilities/config_loader.c
@@ -86,3 +87,35 @@ target_link_directories(nvoiceai_realtime_simple_c PRIVATE
     ${PORTAUDIO_LIBRARY_DIRS}
     ${SNDFILE_LIBRARY_DIRS}
 )
+
+# Offline audio processor - for batch processing and testing
+add_executable(offline_audio_processor 
+    examples/offline_audio_processor.cpp
+)
+
+if(SAVE_AUDIO_FILES)
+    target_compile_definitions(offline_audio_processor PRIVATE SAVE_AUDIO_FILES=1)
+    message(STATUS "SAVE_AUDIO_FILES=ON -> enabling audio WAV file output for offline processor")
+else()
+    message(STATUS "SAVE_AUDIO_FILES=OFF -> WAV file output disabled for offline processor")
+endif()
+
+target_include_directories(offline_audio_processor PRIVATE
+    ${SDK_INCLUDE_DIR}
+    ${SNDFILE_INCLUDE_DIRS}
+)
+
+target_link_libraries(offline_audio_processor PRIVATE
+    "${SDK_LIB_DIR}/libnvoiceai_sdk.a"
+    ${WEBRTC_APM_LIB}
+    ${PORTAUDIO_LIBRARIES}
+    ${SNDFILE_LIBRARIES}
+)
+
+target_link_directories(offline_audio_processor PRIVATE
+    ${SDK_LIB_DIR}
+    ${PORTAUDIO_LIBRARY_DIRS}
+    ${SNDFILE_LIBRARY_DIRS}
+)
+
+message(STATUS "Configured targets: nvoiceai_realtime_simple, nvoiceai_realtime_simple_c, offline_audio_processor")

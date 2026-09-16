@@ -120,18 +120,18 @@ brew install cmake pkg-config libsndfile portaudio blackhole-2ch
 cd /path/to/NvoiceSdk
 chmod +x build.sh
 ./build.sh
-# or enable saving audio files
-./build.sh -DSAVE_AUDIO_FILES=ON
 ```
 
-The build produces three executables:
-- `nvoiceai_realtime_simple` - C++ real-time audio processing example
-- `nvoiceai_realtime_simple_c` - C API version of the real-time example
+The build produces 5 executables:
+- `nvoiceai_realtime_simple` - C++ version of the example that saves the audio files
+- `nvoiceai_realtime_simple_c` - C API version of the example that saves the audio files
+- `nvoiceai_realtime_sherpa_asr` - C++ version of the example with speech recognition
+- `nvoiceai_realtime_sherpa_asr_c` - C API version of the example with speech recognition
 - `offline_audio_processor` - Batch processing tool for recorded audio files
 
-### Running the Real-Time Example
+### Running the example executables
 
-**C++ Version:**
+**C++ Version: **
 ```bash
 ./nvoiceai_realtime_simple
 ```
@@ -140,14 +140,14 @@ The build produces three executables:
 ```bash
 ./nvoiceai_realtime_simple_c
 ```
+Similar to others
 
 The examples:
 - Load configuration from `config.json`
 - Capture audio from your default microphone and playback devices in realtime (e.g. laptop loudspeaker and mic array)
   Note: ensure Blackhole-2ch is selected for Output device in MacOS Sound Settings before running the example. This is to ensure any playback or system audio stream is routed into the SDK
 - Apply audio processing (AEC, NS and AGC)
-- Process audio through the customized capture postprocess callback (empty by default)
-- Optional to save the audio into WAV files from different taping point over the audio stack
+- Process audio through the customized capture postprocess callback (empty by default), as demostrated by the examples.
 
 ### Running Offline Processing
 

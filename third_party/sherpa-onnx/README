@@ -1,0 +1,12 @@
+# Sherpa Onnx model integration guidelines
+
+The static libraries and the headers are already pre-built into the 'third_party/sherpa-onnx/static/' folder. For models, due to the size limiation, please download them into 'third_party/sherpa-onnx/models/' folder by running the followings:
+
+```bash
+mkdir models && cd models
+wget https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-streaming-zipformer-bilingual-zh-en-2023-02-20.tar.bz2
+tar xvf sherpa-onnx-streaming-zipformer-bilingual-zh-en-2023-02-20.tar.bz2
+rm sherpa-onnx-streaming-zipformer-bilingual-zh-en-2023-02-20.tar.bz2
+```
+
+You can also choose other ASR models from Sherpa Onnx release repository, rather than using the ones provided.

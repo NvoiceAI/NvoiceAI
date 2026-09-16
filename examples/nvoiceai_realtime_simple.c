@@ -4,12 +4,9 @@
 #include <time.h>
 #include <unistd.h>
 #include <signal.h>
-#include "nvoiceai_sdk_c.h"
-#include "../utilities/config_loader.h"
-
-#ifdef SAVE_AUDIO_FILES
 #include <sndfile.h>
-#endif
+#include "nvoiceai_sdk_c.h"
+#include "config_loader.h"
 
 /* Demo duration in seconds (can be modified to change how long the demo runs) */
 #define DEMO_DURATION_SECONDS 60
@@ -21,14 +18,12 @@
 #define FRAME_PRINT_INTERVAL_SECONDS 5
 
 /* Global variables for audio file handling */
-#ifdef SAVE_AUDIO_FILES
 static SNDFILE* mic_file = NULL;
 static SNDFILE* near_file = NULL;
 static SNDFILE* far_file = NULL;
 static SNDFILE* mix_file = NULL;
 static SF_INFO sf_info;
 static time_t last_print_time;
-#endif
 
 static time_t callback_start_time;
 static size_t frame_count = 0;
@@ -41,7 +36,6 @@ static void signal_handler(int sig) {
     demo_running = 0;
 }
 
-#ifdef SAVE_AUDIO_FILES
 /* Initialize WAV file writers */
 static int init_wav_files(const char* output_dir, int sample_rate) {
     /* Create output directory if it doesn't exist */
@@ -118,7 +112,6 @@ static void close_wav_files(void) {
         mix_file = NULL;
     }
 }
-#endif
 
 /* Simple callback for processing audio frames */
 static void capture_postprocess_callback(
@@ -133,7 +126,6 @@ static void capture_postprocess_callback(
     
     frame_count++;
 
-#ifdef SAVE_AUDIO_FILES
     /* Write audio data to WAV files */
     if (mic_file && mic) {
         sf_write_float(mic_file, mic, frameSize);
@@ -157,23 +149,6 @@ static void capture_postprocess_callback(
                elapsed, frameSize, frame_count);
         last_print_time = now;
     }
-#else
-    time_t now = time(NULL);
-    time_t elapsed = now - callback_start_time;
-    
-    static time_t last_log_time = 0;
-    if (last_log_time == 0) {
-        last_log_time = callback_start_time;
-    }
-    
-    time_t log_elapsed = now - last_log_time;
-    
-    if (log_elapsed >= FRAME_PRINT_INTERVAL_SECONDS) {
-        printf("[%ld s] Frame Size: %zu samples, Total Frames: %zu\n",
-               elapsed, frameSize, frame_count);
-        last_log_time = now;
-    }
-#endif
 }
 
 int main(void) {
@@ -201,37 +176,26 @@ int main(void) {
     
     /* Get output configuration values */
     const char* output_dir = config.output.save_audio_files_directory;
-    const int save_audio_files_enabled = config.output.save_audio_files_enabled;
     
     printf("Audio Configuration:\n");
     printf("  Sample Rate: %d Hz\n", SAMPLE_RATE);
     printf("  Channels: %d\n", CHANNELS);
     printf("  Frame Size: %d samples (%d ms)\n\n", FRAME_SIZE, config.audio.frame_size_ms);
     
-#ifdef SAVE_AUDIO_FILES
-    /* Initialize WAV file output if enabled */
-    if (save_audio_files_enabled) {
-        printf("Initializing audio file output...\n");
-        if (!init_wav_files(output_dir, SAMPLE_RATE)) {
-            fprintf(stderr, "Error: Failed to initialize WAV files\n");
-            return -1;
-        }
-        printf("Audio files will be saved to: %s\n\n", output_dir);
-    } else {
-        printf("WAV file output disabled in configuration\n\n");
+    /* Initialize WAV file output (enabled by default) */
+    printf("Initializing audio file output...\n");
+    if (!init_wav_files(output_dir, SAMPLE_RATE)) {
+        fprintf(stderr, "Error: Failed to initialize WAV files\n");
+        return -1;
     }
-#endif
+    printf("Audio files will be saved to: %s\n\n", output_dir);
     
     /* Create SDK instance */
     printf("Creating SDK instance...\n");
     nvoiceai_handle_t sdk = nvoiceai_sdk_create(SAMPLE_RATE, CHANNELS, FRAME_SIZE);
     if (!sdk) {
         fprintf(stderr, "Error: Failed to create SDK instance\n");
-#ifdef SAVE_AUDIO_FILES
-        if (save_audio_files_enabled) {
-            close_wav_files();
-        }
-#endif
+        close_wav_files();
         return -1;
     }
     
@@ -240,11 +204,7 @@ int main(void) {
     if (nvoiceai_sdk_init_audio_processing(sdk) != 0) {
         fprintf(stderr, "Error: Failed to initialize audio processing\n");
         nvoiceai_sdk_destroy(sdk);
-#ifdef SAVE_AUDIO_FILES
-        if (save_audio_files_enabled) {
-            close_wav_files();
-        }
-#endif
+        close_wav_files();
         return -1;
     }
     printf("Audio processing initialized successfully!\n\n");
@@ -264,11 +224,7 @@ int main(void) {
     if (nvoiceai_sdk_start(sdk, capture_postprocess_callback, NULL) != 0) {
         fprintf(stderr, "Error: Failed to start SDK\n");
         nvoiceai_sdk_destroy(sdk);
-#ifdef SAVE_AUDIO_FILES
-        if (save_audio_files_enabled) {
-            close_wav_files();
-        }
-#endif
+        close_wav_files();
         return -1;
     }
     
@@ -282,17 +238,13 @@ int main(void) {
     printf("\nStopping audio processing...\n");
     nvoiceai_sdk_stop(sdk);
     
-#ifdef SAVE_AUDIO_FILES
-    if (save_audio_files_enabled) {
-        printf("Closing audio files...\n");
-        close_wav_files();
-        printf("Audio files saved to: %s\n", output_dir);
-        printf("  - mic.wav (microphone input)\n");
-        printf("  - near.wav (echo-cancelled output)\n");
-        printf("  - far.wav (far-end/speaker reference)\n");
-        printf("  - mix.wav (mixed output)\n");
-    }
-#endif
+    printf("Closing audio files...\n");
+    close_wav_files();
+    printf("Audio files saved to: %s\n", output_dir);
+    printf("  - mic.wav (microphone input)\n");
+    printf("  - near.wav (echo-cancelled output)\n");
+    printf("  - far.wav (far-end/speaker reference)\n");
+    printf("  - mix.wav (mixed output)\n");
     
     /* Cleanup */
     nvoiceai_sdk_destroy(sdk);

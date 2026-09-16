@@ -2,6 +2,10 @@
 
 #include <stdint.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* Configuration structures */
 typedef struct {
     int sample_rate;
@@ -32,11 +36,30 @@ typedef struct {
 } OutputConfig;
 
 typedef struct {
+    int enabled;
+    char model_dir[512];
+    int sample_rate;
+    int num_threads;
+    int enable_endpoint;
+    char encoder[256];
+    char decoder[256];
+    char joiner[256];
+    char tokens[256];
+    float rule1_min_trailing_silence;
+    float rule2_min_trailing_silence;
+    int rule3_min_utterance_length;
+    char decoding_method[64];
+    int feature_dim;
+    char provider[32];
+} SherpaOnnxConfig;
+
+typedef struct {
     AudioConfig audio;
     AecConfig aec;
     GainControlConfig gain_control;
     SysOutGainConfig sys_out_gain;
     OutputConfig output;
+    SherpaOnnxConfig sherpa_onnx;
 } Config;
 
 /**
@@ -52,3 +75,7 @@ int load_config(const char* config_file, Config* config);
  * @param config Pointer to Config structure
  */
 void print_config(const Config* config);
+
+#ifdef __cplusplus
+}
+#endif

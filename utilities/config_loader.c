@@ -95,6 +95,38 @@ static int extract_json_bool(const char* json, const char* key, int* out_value) 
     return 1;
 }
 
+/* Helper function to extract a section from JSON */
+static const char* extract_json_section(const char* json, const char* section_name) {
+    static char section_buffer[4096];
+    char search_key[256];
+    snprintf(search_key, sizeof(search_key), "\"%s\"", section_name);
+    
+    const char* start = strstr(json, search_key);
+    if (!start) return NULL;
+    
+    start = strchr(start, '{');
+    if (!start) return NULL;
+    
+    /* Find matching closing brace */
+    int brace_count = 0;
+    const char* pos = start;
+    size_t i = 0;
+    
+    while (*pos && i < sizeof(section_buffer) - 1) {
+        if (*pos == '{') brace_count++;
+        if (*pos == '}') brace_count--;
+        
+        section_buffer[i++] = *pos++;
+        
+        if (brace_count == 0) {
+            section_buffer[i] = '\0';
+            return section_buffer;
+        }
+    }
+    
+    return NULL;
+}
+
 int load_config(const char* config_file, Config* config) {
     FILE* file = fopen(config_file, "r");
     if (!file) {
@@ -133,6 +165,23 @@ int load_config(const char* config_file, Config* config) {
     config->output.save_audio_files_enabled = 0;
     strcpy(config->output.save_audio_files_directory, "./output");
     
+    /* Sherpa ONNX defaults */
+    config->sherpa_onnx.enabled = 0;
+    strcpy(config->sherpa_onnx.model_dir, "./third_party/sherpa-onnx/models/sherpa-onnx-streaming-zipformer-bilingual-zh-en-2023-02-20/");
+    config->sherpa_onnx.sample_rate = 16000;
+    config->sherpa_onnx.num_threads = 1;
+    config->sherpa_onnx.enable_endpoint = 1;
+    strcpy(config->sherpa_onnx.encoder, "encoder-epoch-99-avg-1.int8.onnx");
+    strcpy(config->sherpa_onnx.decoder, "decoder-epoch-99-avg-1.onnx");
+    strcpy(config->sherpa_onnx.joiner, "joiner-epoch-99-avg-1.int8.onnx");
+    strcpy(config->sherpa_onnx.tokens, "tokens.txt");
+    config->sherpa_onnx.rule1_min_trailing_silence = 2.4f;
+    config->sherpa_onnx.rule2_min_trailing_silence = 1.2f;
+    config->sherpa_onnx.rule3_min_utterance_length = 300;
+    strcpy(config->sherpa_onnx.decoding_method, "greedy_search");
+    config->sherpa_onnx.feature_dim = 80;
+    strcpy(config->sherpa_onnx.provider, "cpu");
+    
     /* Extract audio configuration */
     extract_json_int(json_buffer, "sample_rate", &config->audio.sample_rate);
     extract_json_int(json_buffer, "channels", &config->audio.channels);
@@ -155,6 +204,26 @@ int load_config(const char* config_file, Config* config) {
     /* Extract output configuration */
     extract_json_bool(json_buffer, "save_audio_files_enabled", &config->output.save_audio_files_enabled);
     extract_json_string(json_buffer, "save_audio_files_directory", config->output.save_audio_files_directory, sizeof(config->output.save_audio_files_directory));
+    
+    /* Extract Sherpa ONNX configuration */
+    const char* sherpa_section = extract_json_section(json_buffer, "sherpa_onnx");
+    if (sherpa_section) {
+        extract_json_bool(sherpa_section, "enabled", &config->sherpa_onnx.enabled);
+        extract_json_string(sherpa_section, "model_dir", config->sherpa_onnx.model_dir, sizeof(config->sherpa_onnx.model_dir));
+        extract_json_int(sherpa_section, "sample_rate", &config->sherpa_onnx.sample_rate);
+        extract_json_int(sherpa_section, "num_threads", &config->sherpa_onnx.num_threads);
+        extract_json_bool(sherpa_section, "enable_endpoint", &config->sherpa_onnx.enable_endpoint);
+        extract_json_string(sherpa_section, "encoder", config->sherpa_onnx.encoder, sizeof(config->sherpa_onnx.encoder));
+        extract_json_string(sherpa_section, "decoder", config->sherpa_onnx.decoder, sizeof(config->sherpa_onnx.decoder));
+        extract_json_string(sherpa_section, "joiner", config->sherpa_onnx.joiner, sizeof(config->sherpa_onnx.joiner));
+        extract_json_string(sherpa_section, "tokens", config->sherpa_onnx.tokens, sizeof(config->sherpa_onnx.tokens));
+        extract_json_float(sherpa_section, "rule1_min_trailing_silence", &config->sherpa_onnx.rule1_min_trailing_silence);
+        extract_json_float(sherpa_section, "rule2_min_trailing_silence", &config->sherpa_onnx.rule2_min_trailing_silence);
+        extract_json_int(sherpa_section, "rule3_min_utterance_length", &config->sherpa_onnx.rule3_min_utterance_length);
+        extract_json_string(sherpa_section, "decoding_method", config->sherpa_onnx.decoding_method, sizeof(config->sherpa_onnx.decoding_method));
+        extract_json_int(sherpa_section, "feature_dim", &config->sherpa_onnx.feature_dim);
+        extract_json_string(sherpa_section, "provider", config->sherpa_onnx.provider, sizeof(config->sherpa_onnx.provider));
+    }
     
     free(json_buffer);
     return 1;
@@ -180,5 +249,21 @@ void print_config(const Config* config) {
     printf("\nOutput:\n");
     printf("  save_audio_files_enabled: %s\n", config->output.save_audio_files_enabled ? "true" : "false");
     printf("  save_audio_files_directory: %s\n", config->output.save_audio_files_directory);
+    printf("\nSherpa ONNX (Speech Recognition):\n");
+    printf("  enabled: %s\n", config->sherpa_onnx.enabled ? "true" : "false");
+    printf("  model_dir: %s\n", config->sherpa_onnx.model_dir);
+    printf("  sample_rate: %d\n", config->sherpa_onnx.sample_rate);
+    printf("  num_threads: %d\n", config->sherpa_onnx.num_threads);
+    printf("  enable_endpoint: %s\n", config->sherpa_onnx.enable_endpoint ? "true" : "false");
+    printf("  encoder: %s\n", config->sherpa_onnx.encoder);
+    printf("  decoder: %s\n", config->sherpa_onnx.decoder);
+    printf("  joiner: %s\n", config->sherpa_onnx.joiner);
+    printf("  tokens: %s\n", config->sherpa_onnx.tokens);
+    printf("  rule1_min_trailing_silence: %.1f\n", config->sherpa_onnx.rule1_min_trailing_silence);
+    printf("  rule2_min_trailing_silence: %.1f\n", config->sherpa_onnx.rule2_min_trailing_silence);
+    printf("  rule3_min_utterance_length: %d\n", config->sherpa_onnx.rule3_min_utterance_length);
+    printf("  decoding_method: %s\n", config->sherpa_onnx.decoding_method);
+    printf("  feature_dim: %d\n", config->sherpa_onnx.feature_dim);
+    printf("  provider: %s\n", config->sherpa_onnx.provider);
     printf("========================================\n");
 }

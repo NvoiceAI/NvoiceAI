@@ -33,7 +33,7 @@ public:
     void setSystemGain(float gain);
     float getSystemGain() const;
 
-    // Enable audio file saving for audio debugging (requires SAVE_AUDIO_FILES build flag)
+    // Enable audio file saving for audio debugging
     // Specify the directory to store the output files (e.g., "./output")
     bool enableSaveAudioFiles(const std::string& output_dir);
 

@@ -4,12 +4,9 @@
 #include <chrono>
 #include <cmath>
 #include <filesystem>
+#include <sndfile.h>
 #include "NvoiceAiSdk.h"
 #include "ConfigManager.h"
-
-#ifdef SAVE_AUDIO_FILES
-#include <sndfile.h>
-#endif
 
 namespace fs = std::filesystem;
 
@@ -23,19 +20,16 @@ namespace fs = std::filesystem;
 #define FRAME_PRINT_INTERVAL_SECONDS 5
 
 // Global variables for audio file handling
-#ifdef SAVE_AUDIO_FILES
 static SNDFILE* mic_file = nullptr;
 static SNDFILE* near_file = nullptr;
 static SNDFILE* far_file = nullptr;
 static SNDFILE* mix_file = nullptr;
 static SF_INFO sf_info;
 static std::chrono::steady_clock::time_point last_print_time;
-#endif
 
 static std::chrono::steady_clock::time_point callback_start_time;
 static size_t frame_count = 0;
 
-#ifdef SAVE_AUDIO_FILES
 // Initialize WAV file writers
 static bool init_wav_files(const std::string& output_dir, int sample_rate) {
     // Create output directory if it doesn't exist
@@ -114,7 +108,6 @@ static void close_wav_files() {
         mix_file = nullptr;
     }
 }
-#endif
 
 // Simple callback for processing audio frames
 static void capture_postprocess_callback(
@@ -127,7 +120,6 @@ static void capture_postprocess_callback(
 {
     frame_count++;
 
-#ifdef SAVE_AUDIO_FILES
     // Write audio data to WAV files
     if (mic_file && mic) {
         sf_write_float(mic_file, mic, frameSize);
@@ -151,19 +143,6 @@ static void capture_postprocess_callback(
                   << "Total Frames: " << frame_count << "\n";
         last_print_time = now;
     }
-#else
-    auto now = std::chrono::steady_clock::now();
-    auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(now - callback_start_time);
-    
-    static std::chrono::steady_clock::time_point last_log_time = callback_start_time;
-    auto log_elapsed = std::chrono::duration_cast<std::chrono::seconds>(now - last_log_time);
-    
-    if (log_elapsed.count() >= FRAME_PRINT_INTERVAL_SECONDS) {
-        std::cout << "[" << elapsed.count() << "s] Frame Size: " << frameSize << " samples, "
-                  << "Total Frames: " << frame_count << "\n";
-        last_log_time = now;
-    }
-#endif
 }
 
 int main() {
@@ -197,11 +176,7 @@ int main() {
     // Get output configuration
     const auto& output_config = ConfigManager::getOutputConfig();
     std::string output_dir = output_config.save_audio_files_directory;
-    bool save_audio_files_enabled = output_config.save_audio_files_enabled;
-    
-#ifdef SAVE_AUDIO_FILES
-    // Initialize WAV file output if enabled
-    if (save_audio_files_enabled) {
+    if (output_config.save_audio_files_enabled) {
         std::cout << "Initializing audio file output...\n";
         if (!init_wav_files(output_dir, SAMPLE_RATE)) {
             std::cerr << "Error: Failed to initialize WAV files\n";
@@ -211,7 +186,6 @@ int main() {
     } else {
         std::cout << "WAV file output disabled in configuration\n\n";
     }
-#endif
     
     // Create SDK instance
     std::cout << "Creating SDK instance...\n";
@@ -221,11 +195,7 @@ int main() {
     std::cout << "Initializing audio processing...\n";
     if (!sdk.initAudioProcessing()) {
         std::cerr << "Error: Failed to initialize audio processing\n";
-#ifdef SAVE_AUDIO_FILES
-        if (save_audio_files_enabled) {
-            close_wav_files();
-        }
-#endif
+        close_wav_files();
         return -1;
     }
     std::cout << "Audio processing initialized successfully!\n\n";
@@ -240,11 +210,7 @@ int main() {
     
     if (!sdk.start(capture_postprocess_callback, nullptr)) {
         std::cerr << "Error: Failed to start SDK\n";
-#ifdef SAVE_AUDIO_FILES
-        if (save_audio_files_enabled) {
-            close_wav_files();
-        }
-#endif
+        close_wav_files();
         return -1;
     }
     
@@ -258,17 +224,13 @@ int main() {
     std::cout << "\nStopping audio processing...\n";
     sdk.stop();
     
-#ifdef SAVE_AUDIO_FILES
-    if (save_audio_files_enabled) {
-        std::cout << "Closing audio files...\n";
-        close_wav_files();
-        std::cout << "Audio files saved to: " << output_dir << "\n";
-        std::cout << "  - mic.wav (microphone input)\n";
-        std::cout << "  - near.wav (echo-cancelled output)\n";
-        std::cout << "  - far.wav (far-end/speaker reference)\n";
-        std::cout << "  - mix.wav (mixed output)\n";
-    }
-#endif
+    std::cout << "Closing audio files...\n";
+    close_wav_files();
+    std::cout << "Audio files saved to: " << output_dir << "\n";
+    std::cout << "  - mic.wav (microphone input)\n";
+    std::cout << "  - near.wav (echo-cancelled output)\n";
+    std::cout << "  - far.wav (far-end/speaker reference)\n";
+    std::cout << "  - mix.wav (mixed output)\n";
     
     std::cout << "Demo completed.\n";
     

@@ -22,5 +22,23 @@
     "save_audio_files_enabled": true,
     "save_audio_files_directory": "./output",
     "description": "Set save_audio_files_enabled to true and specify directory to enable audio debugging"
+  },
+  "sherpa_onnx": {
+    "enabled": true,
+    "model_dir": "./third_party/sherpa-onnx/models/sherpa-onnx-streaming-zipformer-bilingual-zh-en-2023-02-20/",
+    "sample_rate": 16000,
+    "num_threads": 1,
+    "enable_endpoint": true,
+    "encoder": "encoder-epoch-99-avg-1.int8.onnx",
+    "decoder": "decoder-epoch-99-avg-1.onnx",
+    "joiner": "joiner-epoch-99-avg-1.int8.onnx",
+    "tokens": "tokens.txt",
+    "rule1_min_trailing_silence": 2.4,
+    "rule2_min_trailing_silence": 1.2,
+    "rule3_min_utterance_length": 300,
+    "decoding_method": "greedy_search",
+    "feature_dim": 80,
+    "provider": "cpu",
+    "description": "Speech recognition configuration (optional). encoder/decoder/joiner/tokens are relative to model_dir"
   }
 }

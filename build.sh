@@ -1,22 +1,22 @@
 #!/bin/bash
 
-# Build script for NvoiceAI SDK Realtime Simple Demo in C/C++
+# Build script for NvoiceAI SDK (with audio file saving and Sherpa ONNX support enabled by default)
 # 
 # Usage:
-#   ./build.sh                              # Build with default options
-#   ./build.sh -DSAVE_AUDIO_FILES=ON        # Enable audio file saving
-#   ./build.sh -DCMAKE_BUILD_TYPE=Release   # Build in Release mode
+#   ./build.sh                                    # Build with default options
+#   ./build.sh -DCMAKE_BUILD_TYPE=Release         # Build in Release mode
 
 set -e  # Exit on error
 
 echo "=========================================="
-echo "NvoiceAI SDK Realtime Simple Demo C/C++ - Build Script"
+echo "NvoiceAI SDK - Build Script"
 echo "=========================================="
 echo ""
 
 # Colors for output
 GREEN='\033[0;32m'
 BLUE='\033[0;34m'
+YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
 # Get the script directory
@@ -25,8 +25,10 @@ BUILD_DIR="${SCRIPT_DIR}/build"
 
 # Collect all command line arguments for CMake
 CMAKE_ARGS=()
+
 if [ $# -gt 0 ]; then
     CMAKE_ARGS=("$@")
+    
     echo -e "${BLUE}CMake arguments:${NC}"
     for arg in "${CMAKE_ARGS[@]}"; do
         echo "  $arg"
@@ -62,16 +64,40 @@ echo "Build Complete!"
 echo "==========================================${NC}"
 echo ""
 echo "Executables built:"
-echo "  C++ version:"
+echo "  C++ version (with audio file saving):"
 echo "    $BUILD_DIR/nvoiceai_realtime_simple"
 echo ""
-echo "  C version:"
+echo "  C version (with audio file saving):"
 echo "    $BUILD_DIR/nvoiceai_realtime_simple_c"
 echo ""
-echo "To run the C++ demo:"
+echo "  Offline audio processor (batch processing):"
+echo "    $BUILD_DIR/offline_audio_processor"
+echo ""
+echo "  C++ version with Sherpa ONNX speech recognition:"
+echo "    $BUILD_DIR/nvoiceai_realtime_sherpa_asr"
+echo ""
+echo "  C version with Sherpa ONNX speech recognition:"
+echo "    $BUILD_DIR/nvoiceai_realtime_sherpa_asr_c"
+echo ""
+echo "To run the C++ demo (with audio file saving):"
+echo "  cd $SCRIPT_DIR"
 echo "  $BUILD_DIR/nvoiceai_realtime_simple"
 echo ""
-echo "To run the C demo:"
+echo "To run the C demo (with audio file saving):"
+echo "  cd $SCRIPT_DIR"
 echo "  $BUILD_DIR/nvoiceai_realtime_simple_c"
 echo ""
-
+echo "To run with speech recognition (C++):"
+echo "  cd $SCRIPT_DIR"
+echo "  $BUILD_DIR/nvoiceai_realtime_sherpa_asr"
+echo ""
+echo "To run with speech recognition (C):"
+echo "  cd $SCRIPT_DIR"
+echo "  $BUILD_DIR/nvoiceai_realtime_sherpa_asr_c"
+echo ""
+echo "To process audio files offline:"
+echo "  cd $SCRIPT_DIR"
+echo "  $BUILD_DIR/offline_audio_processor mic.wav playback.wav output.wav"
+echo ""
+echo "For more information, see README.md"
+echo ""

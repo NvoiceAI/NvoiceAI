@@ -1,2 +1,6 @@
+*.bak
+*.wav
+third_party/sherpa-onnx/models/
+.vscode/
 output/
 build/

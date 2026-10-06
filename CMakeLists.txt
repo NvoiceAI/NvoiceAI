@@ -123,7 +123,6 @@ if(SHERPA_ONNX_FOUND)
     # Build C++ Sherpa ASR example
     add_executable(nvoiceai_realtime_sherpa_asr 
         examples/nvoiceai_realtime_sherpa_asr.cpp
-        ${UTILITIES_DIR}/ConfigManager.cpp
         ${SDK_SRC_DIR}/SherpaOnnxManager.cpp
     )
     

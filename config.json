@@ -9,6 +9,11 @@
     "mobile_mode": false,
     "high_pass_filter_enabled": true
   },
+  "ns": {
+    "enabled": true,
+    "level": 2,
+    "description": "noise suppression. level: 1=low, 2=moderate, 3=high, 4=veryhigh"
+  },
   "gain_control": {
     "agc1_enabled": true,
     "agc1_mode": "adaptive_analog",

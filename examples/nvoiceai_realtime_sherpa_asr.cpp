@@ -104,8 +104,8 @@ int main() {
     int frame_size = audio_config.frameSize();
     NvoiceAiSdk sdk(audio_config.sample_rate, audio_config.channels, frame_size);
     
-    // Initialize audio processing
-    if (!sdk.initAudioProcessing()) {
+    // Initialize audio processing (AEC/NS/Gain) from config.json.
+    if (!sdk.initAudioProcessing("config.json")) {
         std::cerr << "Error: Failed to initialize audio processing\n";
         return -1;
     }

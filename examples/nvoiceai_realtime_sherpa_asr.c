@@ -151,8 +151,8 @@ int main(void) {
         return -1;
     }
     
-    // Initialize audio processing
-    if (nvoiceai_sdk_init_audio_processing(sdk) != 0) {
+    // Initialize audio processing (AEC/NS/Gain) from config.json
+    if (nvoiceai_sdk_init_audio_processing_with_config(sdk, "config.json") != 0) {
         fprintf(stderr, "Error: Failed to initialize audio processing\n");
         if (asr_manager) delete (SherpaOnnxManager*) asr_manager;
         nvoiceai_sdk_destroy(sdk);

@@ -191,9 +191,9 @@ int main() {
     std::cout << "Creating SDK instance...\n";
     NvoiceAiSdk sdk(SAMPLE_RATE, CHANNELS, FRAME_SIZE);
     
-    // Initialize audio processing
+    // Initialize audio processing (AEC/NS/Gain) from config.json.
     std::cout << "Initializing audio processing...\n";
-    if (!sdk.initAudioProcessing()) {
+    if (!sdk.initAudioProcessing("config.json")) {
         std::cerr << "Error: Failed to initialize audio processing\n";
         close_wav_files();
         return -1;

@@ -1,16 +1,23 @@
 #pragma once
 #include <cstddef>
 #include <functional>
+#include <string>
 
 using NvoiceAiFrameCallback = std::function<void(const float* mic, const float* near, const float* far, const float* mix, size_t frameSize, void* user_data)>;
 
 class NvoiceAiSdk {
 public:
     NvoiceAiSdk(int sampleRate, int channels, int frameSize);
+
+    // Create SDK using audio format (sample_rate/channels/frame_size) loaded from config.json.
+    // If configFilePath is NULL/empty, the default configuration is used.
+    explicit NvoiceAiSdk(const std::string& configFilePath = "");
     ~NvoiceAiSdk();
 
-    // Start/stop recording + processing. The SDK owns PortAudio and a processing thread.
-    bool initAudioProcessing();
+    // Initialize audio processing (AEC/NS/Gain) using settings loaded from config.json.
+    // If configFilePath is NULL/empty, the default configuration is used.
+    // IMPORTANT: MUST be called successfully before start().
+    bool initAudioProcessing(const std::string& configFilePath = "");
     bool start(NvoiceAiFrameCallback cb, void* user_data = nullptr);
     void stop();
 
@@ -29,7 +36,7 @@ public:
     int channels() const;
     int frameSize() const;
 
-    // Control loudspeaker/system playback gain (1.0 = unity)
+    // Control system playback gain from C API (1.0 = unity)
     void setSystemGain(float gain);
     float getSystemGain() const;
 

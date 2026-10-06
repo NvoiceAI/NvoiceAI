@@ -199,9 +199,9 @@ int main(void) {
         return -1;
     }
     
-    /* Initialize audio processing */
+    /* Initialize audio processing (AEC/NS/Gain) from config.json */
     printf("Initializing audio processing...\n");
-    if (nvoiceai_sdk_init_audio_processing(sdk) != 0) {
+    if (nvoiceai_sdk_init_audio_processing_with_config(sdk, "config.json") != 0) {
         fprintf(stderr, "Error: Failed to initialize audio processing\n");
         nvoiceai_sdk_destroy(sdk);
         close_wav_files();

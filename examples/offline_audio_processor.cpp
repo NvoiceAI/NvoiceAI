@@ -169,8 +169,8 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    // Initialize audio processing
-    if (nvoiceai_sdk_init_audio_processing(sdk) != 0) {
+    // Initialize audio processing (AEC/NS/Gain) from config.json
+    if (nvoiceai_sdk_init_audio_processing_with_config(sdk, config_file.c_str()) != 0) {
         std::cerr << "Error: Failed to initialize audio processing\n";
         nvoiceai_sdk_destroy(sdk);
         return 1;

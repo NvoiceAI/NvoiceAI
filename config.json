@@ -2,31 +2,35 @@
   "audio": {
     "sample_rate": 16000,
     "channels": 1,
-    "frame_size_ms": 10
+    "frame_size_ms": 10,
+    "description": "[Built-in] Basic audio configurations to initialize the SDK object. 16k for wideband and 48k for super wideband voice. If channels > 1, down mix into mono."
   },
   "aec": {
     "enabled": true,
     "mobile_mode": false,
-    "high_pass_filter_enabled": true
+    "high_pass_filter_enabled": true,
+    "description": "[Built-in] Echo cancellation. Enable mobile if it runs on resource-limited device"
   },
   "ns": {
     "enabled": true,
     "level": 2,
-    "description": "noise suppression. level: 1=low, 2=moderate, 3=high, 4=veryhigh"
+    "description": "[Built-in] Noise suppression. level: 1=low, 2=moderate, 3=high, 4=veryhigh"
   },
   "gain_control": {
     "agc1_enabled": true,
     "agc1_mode": "adaptive_analog",
-    "agc2_enabled": true
+    "agc2_enabled": true,
+    "description": "[Built-in] Adaptive gain control. Enable agc1 and agc2 by default"
   },
   "sys_out_gain": {
     "pre_gain": 1.0,   
-    "post_gain_ratio": 1.0  
+    "post_gain_ratio": 1.0,  
+    "description": "[Built-in] System or playback audio volumn control"
   },
   "output": {
     "save_audio_files_enabled": true,
     "save_audio_files_directory": "./output",
-    "description": "Set save_audio_files_enabled to true and specify directory to enable audio debugging"
+    "description": "[capture postprocessing] Specify directory to save audio recordings at different stage"
   },
   "sherpa_onnx": {
     "enabled": true,
@@ -44,6 +48,6 @@
     "decoding_method": "greedy_search",
     "feature_dim": 80,
     "provider": "cpu",
-    "description": "Speech recognition configuration (optional). encoder/decoder/joiner/tokens are relative to model_dir"
+    "description": "[capture postprocessing] Speech recognition configuration. encoder/decoder/joiner/tokens are relative to model_dir"
   }
 }

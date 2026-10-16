@@ -1,10 +1,13 @@
 #!/bin/bash
 
-# Build script for NvoiceAI SDK (with audio file saving and Sherpa ONNX support enabled by default)
+# Build script for NvoiceAI SDK
+# (audio file saving, Sherpa ONNX and Cactus Needle support enabled by default
+#  when their dependencies are found under third_party/)
 # 
 # Usage:
 #   ./build.sh                                    # Build with default options
 #   ./build.sh -DCMAKE_BUILD_TYPE=Release         # Build in Release mode
+#   ./build.sh -DCACTUS_NEEDLE_ROOT=/path/to/cactus-needle/macos-arm64
 
 set -e  # Exit on error
 
@@ -79,25 +82,40 @@ echo ""
 echo "  C version with Sherpa ONNX speech recognition:"
 echo "    $BUILD_DIR/nvoiceai_realtime_sherpa_asr_c"
 echo ""
+echo "  C version with Cactus Needle streaming speech recognition:"
+echo "    $BUILD_DIR/nvoiceai_realtime_cactus_needle_asr"
+echo ""
+echo "Note: the Sherpa ONNX examples are only built when sherpa-onnx is found"
+echo "      under third_party/, and the Cactus Needle example is only built when"
+echo "      third_party/cactus-needle/macos-arm64 is present."
+echo ""
+echo "Every realtime example accepts a single optional argument: the path to the"
+echo "configuration file. If omitted, each example falls back to its own default"
+echo "file under configs/."
+echo ""
 echo "To run the C++ demo (with audio file saving):"
 echo "  cd $SCRIPT_DIR"
-echo "  $BUILD_DIR/nvoiceai_realtime_simple"
+echo "  $BUILD_DIR/nvoiceai_realtime_simple [configs/config_simple.json]"
 echo ""
 echo "To run the C demo (with audio file saving):"
 echo "  cd $SCRIPT_DIR"
-echo "  $BUILD_DIR/nvoiceai_realtime_simple_c"
+echo "  $BUILD_DIR/nvoiceai_realtime_simple_c [configs/config_simple.json]"
 echo ""
-echo "To run with speech recognition (C++):"
+echo "To run with Sherpa ONNX speech recognition (C++):"
 echo "  cd $SCRIPT_DIR"
-echo "  $BUILD_DIR/nvoiceai_realtime_sherpa_asr"
+echo "  $BUILD_DIR/nvoiceai_realtime_sherpa_asr [configs/config_sherpa_asr.json]"
 echo ""
-echo "To run with speech recognition (C):"
+echo "To run with Sherpa ONNX speech recognition (C):"
 echo "  cd $SCRIPT_DIR"
-echo "  $BUILD_DIR/nvoiceai_realtime_sherpa_asr_c"
+echo "  $BUILD_DIR/nvoiceai_realtime_sherpa_asr_c [configs/config_sherpa_asr.json]"
+echo ""
+echo "To run with Cactus Needle streaming speech recognition (C):"
+echo "  cd $SCRIPT_DIR"
+echo "  $BUILD_DIR/nvoiceai_realtime_cactus_needle_asr [configs/config_cactus_needle.json]"
 echo ""
 echo "To process audio files offline:"
 echo "  cd $SCRIPT_DIR"
-echo "  $BUILD_DIR/offline_audio_processor mic.wav playback.wav output.wav"
+echo "  $BUILD_DIR/offline_audio_processor mic.wav playback.wav output.wav [configs/config.json]"
 echo ""
 echo "For more information, see README.md"
 echo ""

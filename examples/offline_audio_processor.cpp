@@ -97,10 +97,10 @@ void print_usage(const char* program_name) {
     std::cout << "  mic.wav           - Input microphone audio file (WAV format, 16kHz, mono required)\n";
     std::cout << "  playback.wav      - Input playback audio file (WAV format, 16kHz, mono required)\n";
     std::cout << "  output.wav        - Output processed audio file (WAV format)\n";
-    std::cout << "  config.json       - Optional: Configuration file (default: config.json in current directory)\n";
+    std::cout << "  config.json       - Optional: Configuration file (default: configs/config.json)\n";
     std::cout << "\nExample:\n";
     std::cout << "  " << program_name << " mic.wav playback.wav output.wav\n";
-    std::cout << "  " << program_name << " mic.wav playback.wav output.wav config.json\n";
+    std::cout << "  " << program_name << " mic.wav playback.wav output.wav configs/config.json\n";
 }
 
 int main(int argc, char* argv[]) {
@@ -112,7 +112,7 @@ int main(int argc, char* argv[]) {
     std::string mic_file = argv[1];
     std::string playback_file = argv[2];
     std::string output_file = argv[3];
-    std::string config_file = "config.json";
+    std::string config_file = "configs/config.json";
     
     // Parse optional config file argument
     if (argc == 5) {

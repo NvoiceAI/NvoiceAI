@@ -151,16 +151,22 @@ static void capture_postprocess_callback(
     }
 }
 
-int main(void) {
+int main(int argc, char* argv[]) {
     printf("========================================\n");
     printf("NvoiceAI SDK Realtime Simple Demo (C API)\n");
     printf("========================================\n\n");
     
-    /* Load configuration from config.json */
-    printf("Loading configuration from config.json...\n");
+    if (argc > 2) {
+        printf("Usage: %s <config_file_path>\n", argv[0]);
+        return -1;
+    }
+    const char* config_file_path = (argc == 2) ? argv[1] : "configs/config_simple.json";
+    
+    /* Load configuration from the configuration file */
+    printf("Loading configuration from: %s\n", config_file_path);
     Config config;
-    if (!load_config("config.json", &config)) {
-        fprintf(stderr, "Error: Failed to load config.json\n");
+    if (!load_config(config_file_path, &config)) {
+        fprintf(stderr, "Error: Failed to load %s\n", config_file_path);
         return -1;
     }
     printf("Configuration loaded successfully!\n\n");
@@ -199,9 +205,9 @@ int main(void) {
         return -1;
     }
     
-    /* Initialize audio processing (AEC/NS/Gain) from config.json */
+    /* Initialize audio processing (AEC/NS/Gain) from the configuration file */
     printf("Initializing audio processing...\n");
-    if (nvoiceai_sdk_init_audio_processing_with_config(sdk, "config.json") != 0) {
+    if (nvoiceai_sdk_init_audio_processing_with_config(sdk, config_file_path) != 0) {
         fprintf(stderr, "Error: Failed to initialize audio processing\n");
         nvoiceai_sdk_destroy(sdk);
         close_wav_files();

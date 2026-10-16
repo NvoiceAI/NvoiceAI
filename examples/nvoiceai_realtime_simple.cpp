@@ -145,15 +145,19 @@ static void capture_postprocess_callback(
     }
 }
 
-int main() {
+int main(int argc, char* argv[]) {
     std::cout << "========================================\n";
     std::cout << "NvoiceAI SDK Realtime Simple Demo C++\n";
     std::cout << "========================================\n\n";
-    
-    // Load configuration from config.json
-    std::cout << "Loading configuration from config.json...\n";
-    if (!ConfigManager::load("config.json")) {
-        std::cerr << "Error: Failed to load config.json\n";
+
+    if (argc > 2) {
+        std::cout << "Usage: " << argv[0] << " <config_file_path>\n";
+        return -1;
+    }
+    std::string config_file_path = (argc == 2) ? argv[1] : "configs/config_simple.json";
+    std::cout << "Loading configuration from: " << config_file_path << "\n";
+    if (!ConfigManager::load(config_file_path)) {
+        std::cerr << "Error: Failed to load " << config_file_path << "\n";
         return -1;
     }
     std::cout << "Configuration loaded successfully!\n\n";
@@ -191,9 +195,9 @@ int main() {
     std::cout << "Creating SDK instance...\n";
     NvoiceAiSdk sdk(SAMPLE_RATE, CHANNELS, FRAME_SIZE);
     
-    // Initialize audio processing (AEC/NS/Gain) from config.json.
+    // Initialize audio processing (AEC/NS/Gain) from the configuration file.
     std::cout << "Initializing audio processing...\n";
-    if (!sdk.initAudioProcessing("config.json")) {
+    if (!sdk.initAudioProcessing(config_file_path)) {
         std::cerr << "Error: Failed to initialize audio processing\n";
         close_wav_files();
         return -1;

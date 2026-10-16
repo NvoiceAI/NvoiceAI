@@ -188,6 +188,47 @@ else()
     message(WARNING "  Skipping nvoiceai_realtime_sherpa_asr targets")
 endif()
 
+# Real-time example with Cactus "needle" streaming speech recognition
+# cactus-needle is vendored under third_party/
+set(CACTUS_NEEDLE_ROOT "${SDK_ROOT}/third_party/cactus-needle/macos-arm64" CACHE PATH
+    "Path to the cactus-needle macos-arm64 directory (containing needle.h and libneedle.a)")
+
+if(EXISTS "${CACTUS_NEEDLE_ROOT}/needle.h" AND EXISTS "${CACTUS_NEEDLE_ROOT}/libneedle.a")
+    message(STATUS "Found cactus-needle at ${CACTUS_NEEDLE_ROOT}")
+
+    add_executable(nvoiceai_realtime_cactus_needle_asr
+        examples/nvoiceai_realtime_cactus_needle_asr.c
+        ${UTILITIES_DIR}/config_loader.c
+    )
+
+    target_include_directories(nvoiceai_realtime_cactus_needle_asr PRIVATE
+        ${SDK_INCLUDE_DIR}
+        ${UTILITIES_DIR}
+        ${CACTUS_NEEDLE_ROOT}
+        ${PORTAUDIO_INCLUDE_DIRS}
+    )
+
+    target_link_directories(nvoiceai_realtime_cactus_needle_asr PRIVATE
+        ${SDK_LIB_DIR}
+        ${CACTUS_NEEDLE_ROOT}
+        ${PORTAUDIO_LIBRARY_DIRS}
+    )
+
+    target_link_libraries(nvoiceai_realtime_cactus_needle_asr PRIVATE
+        "${SDK_LIB_DIR}/libnvoiceai_sdk.a"
+        "${CACTUS_NEEDLE_ROOT}/libneedle.a"
+        ${WEBRTC_APM_LIB}
+        ${PORTAUDIO_LIBRARIES}
+        c++
+    )
+
+    message(STATUS "Configured nvoiceai_realtime_cactus_needle_asr (C API) with streaming speech recognition")
+else()
+    message(WARNING "cactus-needle NOT found at ${CACTUS_NEEDLE_ROOT}")
+    message(WARNING "  Expected needle.h and libneedle.a there")
+    message(WARNING "  Skipping nvoiceai_realtime_cactus_needle_asr target")
+endif()
+
 message(STATUS "Configured targets:")
 message(STATUS "  - nvoiceai_realtime_simple (C++ with audio file saving)")
 message(STATUS "  - nvoiceai_realtime_simple_c (C API example)")
@@ -196,3 +237,7 @@ if(SHERPA_ONNX_FOUND)
     message(STATUS "  - nvoiceai_realtime_sherpa_asr (C++ with speech recognition)")
     message(STATUS "  - nvoiceai_realtime_sherpa_asr_c (C-style with speech recognition)")
 endif()
+if(EXISTS "${CACTUS_NEEDLE_ROOT}/needle.h" AND EXISTS "${CACTUS_NEEDLE_ROOT}/libneedle.a")
+    message(STATUS "  - nvoiceai_realtime_cactus_needle_asr (C API with streaming speech recognition)")
+endif()
+

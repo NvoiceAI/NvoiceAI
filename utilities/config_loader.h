@@ -54,12 +54,25 @@ typedef struct {
 } SherpaOnnxConfig;
 
 typedef struct {
+    int enabled;
+    char model_path[512];
+    int sample_rate;          /* needle requires 16000 Hz mono */
+    int chunk_ms;             /* audio buffered per streaming pass */
+    int out_capacity;         /* byte size of the JSON result buffer */
+    int skip_initial_ms;      /* audio discarded at startup */
+    int sentences_per_line;   /* new output line after N sentences */
+    char language[32];        /* "" = auto-detect */
+    char keywords[512];       /* "" = no keyword biasing */
+} CactusNeedleConfig;
+
+typedef struct {
     AudioConfig audio;
     AecConfig aec;
     GainControlConfig gain_control;
     SysOutGainConfig sys_out_gain;
     OutputConfig output;
     SherpaOnnxConfig sherpa_onnx;
+    CactusNeedleConfig cactus_needle;
 } Config;
 
 /**

@@ -182,6 +182,17 @@ int load_config(const char* config_file, Config* config) {
     config->sherpa_onnx.feature_dim = 80;
     strcpy(config->sherpa_onnx.provider, "cpu");
     
+    /* Cactus needle defaults */
+    config->cactus_needle.enabled = 0;
+    strcpy(config->cactus_needle.model_path, "./third_party/cactus-needle/whistle.cact");
+    config->cactus_needle.sample_rate = 16000;
+    config->cactus_needle.chunk_ms = 1000;
+    config->cactus_needle.out_capacity = 8192;
+    config->cactus_needle.skip_initial_ms = 2000;
+    config->cactus_needle.sentences_per_line = 4;
+    config->cactus_needle.language[0] = '\0';
+    config->cactus_needle.keywords[0] = '\0';
+    
     /* Extract audio configuration */
     extract_json_int(json_buffer, "sample_rate", &config->audio.sample_rate);
     extract_json_int(json_buffer, "channels", &config->audio.channels);
@@ -225,6 +236,20 @@ int load_config(const char* config_file, Config* config) {
         extract_json_string(sherpa_section, "provider", config->sherpa_onnx.provider, sizeof(config->sherpa_onnx.provider));
     }
     
+    /* Extract Cactus needle configuration */
+    const char* needle_section = extract_json_section(json_buffer, "cactus_needle");
+    if (needle_section) {
+        extract_json_bool(needle_section, "enabled", &config->cactus_needle.enabled);
+        extract_json_string(needle_section, "model_path", config->cactus_needle.model_path, sizeof(config->cactus_needle.model_path));
+        extract_json_int(needle_section, "sample_rate", &config->cactus_needle.sample_rate);
+        extract_json_int(needle_section, "chunk_ms", &config->cactus_needle.chunk_ms);
+        extract_json_int(needle_section, "out_capacity", &config->cactus_needle.out_capacity);
+        extract_json_int(needle_section, "skip_initial_ms", &config->cactus_needle.skip_initial_ms);
+        extract_json_int(needle_section, "sentences_per_line", &config->cactus_needle.sentences_per_line);
+        extract_json_string(needle_section, "language", config->cactus_needle.language, sizeof(config->cactus_needle.language));
+        extract_json_string(needle_section, "keywords", config->cactus_needle.keywords, sizeof(config->cactus_needle.keywords));
+    }
+    
     free(json_buffer);
     return 1;
 }
@@ -265,5 +290,15 @@ void print_config(const Config* config) {
     printf("  decoding_method: %s\n", config->sherpa_onnx.decoding_method);
     printf("  feature_dim: %d\n", config->sherpa_onnx.feature_dim);
     printf("  provider: %s\n", config->sherpa_onnx.provider);
+    printf("\nCactus Needle (Streaming Speech Recognition):\n");
+    printf("  enabled: %s\n", config->cactus_needle.enabled ? "true" : "false");
+    printf("  model_path: %s\n", config->cactus_needle.model_path);
+    printf("  sample_rate: %d\n", config->cactus_needle.sample_rate);
+    printf("  chunk_ms: %d\n", config->cactus_needle.chunk_ms);
+    printf("  out_capacity: %d\n", config->cactus_needle.out_capacity);
+    printf("  skip_initial_ms: %d\n", config->cactus_needle.skip_initial_ms);
+    printf("  sentences_per_line: %d\n", config->cactus_needle.sentences_per_line);
+    printf("  language: %s\n", config->cactus_needle.language[0] ? config->cactus_needle.language : "(auto-detect)");
+    printf("  keywords: %s\n", config->cactus_needle.keywords[0] ? config->cactus_needle.keywords : "(none)");
     printf("========================================\n");
 }

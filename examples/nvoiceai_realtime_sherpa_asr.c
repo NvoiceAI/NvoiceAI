@@ -71,16 +71,22 @@ static void capture_postprocess_callback(
     }
 }
 
-int main(void) {
+int main(int argc, char* argv[]) {
     printf("========================================\n");
     printf("NvoiceAI SDK Realtime Speech Recognition Demo (C API)\n");
     printf("========================================\n\n");
     
+    if (argc > 2) {
+        printf("Usage: %s <config_file_path>\n", argv[0]);
+        return -1;
+    }
+    const char* config_file_path = (argc == 2) ? argv[1] : "configs/config_sherpa_asr.json";
+    
     // Load configuration using pure C config_loader
-    printf("Loading configuration from config.json...\n");
+    printf("Loading configuration from: %s\n", config_file_path);
     Config config;
-    if (!load_config("config.json", &config)) {
-        fprintf(stderr, "Error: Failed to load config.json\n");
+    if (!load_config(config_file_path, &config)) {
+        fprintf(stderr, "Error: Failed to load %s\n", config_file_path);
         return -1;
     }
     print_config(&config);
@@ -151,8 +157,8 @@ int main(void) {
         return -1;
     }
     
-    // Initialize audio processing (AEC/NS/Gain) from config.json
-    if (nvoiceai_sdk_init_audio_processing_with_config(sdk, "config.json") != 0) {
+    // Initialize audio processing (AEC/NS/Gain) from the configuration file
+    if (nvoiceai_sdk_init_audio_processing_with_config(sdk, config_file_path) != 0) {
         fprintf(stderr, "Error: Failed to initialize audio processing\n");
         if (asr_manager) delete (SherpaOnnxManager*) asr_manager;
         nvoiceai_sdk_destroy(sdk);

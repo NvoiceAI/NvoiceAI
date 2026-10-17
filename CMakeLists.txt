@@ -223,6 +223,38 @@ if(EXISTS "${CACTUS_NEEDLE_ROOT}/needle.h" AND EXISTS "${CACTUS_NEEDLE_ROOT}/lib
     )
 
     message(STATUS "Configured nvoiceai_realtime_cactus_needle_asr (C API) with streaming speech recognition")
+
+    # Full-duplex variant: transcribes near-end and far-end simultaneously
+    # (one worker thread per direction) and shows both on a simple two-board
+    # ANSI terminal GUI.
+    add_executable(nvoiceai_realtime_cactus_needle_asr_fullduplex
+        examples/nvoiceai_realtime_cactus_needle_asr_fullduplex.c
+        ${UTILITIES_DIR}/config_loader.c
+    )
+
+    target_include_directories(nvoiceai_realtime_cactus_needle_asr_fullduplex PRIVATE
+        ${SDK_INCLUDE_DIR}
+        ${UTILITIES_DIR}
+        ${CACTUS_NEEDLE_ROOT}
+        ${PORTAUDIO_INCLUDE_DIRS}
+    )
+
+    target_link_directories(nvoiceai_realtime_cactus_needle_asr_fullduplex PRIVATE
+        ${SDK_LIB_DIR}
+        ${CACTUS_NEEDLE_ROOT}
+        ${PORTAUDIO_LIBRARY_DIRS}
+    )
+
+    target_link_libraries(nvoiceai_realtime_cactus_needle_asr_fullduplex PRIVATE
+        "${SDK_LIB_DIR}/libnvoiceai_sdk.a"
+        "${CACTUS_NEEDLE_ROOT}/libneedle.a"
+        ${WEBRTC_APM_LIB}
+        ${PORTAUDIO_LIBRARIES}
+        pthread
+        c++
+    )
+
+    message(STATUS "Configured nvoiceai_realtime_cactus_needle_asr_fullduplex (C API) with full-duplex speech recognition")
 else()
     message(WARNING "cactus-needle NOT found at ${CACTUS_NEEDLE_ROOT}")
     message(WARNING "  Expected needle.h and libneedle.a there")
@@ -239,5 +271,6 @@ if(SHERPA_ONNX_FOUND)
 endif()
 if(EXISTS "${CACTUS_NEEDLE_ROOT}/needle.h" AND EXISTS "${CACTUS_NEEDLE_ROOT}/libneedle.a")
     message(STATUS "  - nvoiceai_realtime_cactus_needle_asr (C API with streaming speech recognition)")
+    message(STATUS "  - nvoiceai_realtime_cactus_needle_asr_fullduplex (C API, near+far ASR with 2-board GUI)")
 endif()
 

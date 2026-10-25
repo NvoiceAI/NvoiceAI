@@ -24,9 +24,6 @@ public:
     // Offline processing 
     bool processOffline(const float* mic, const float* playback, float* output, size_t frameSize);
 
-    // Privacy: true to enable separate near/far outputs; false to use mixed output.
-    void setPrivacy(bool privacy);
-
     // Runtime AEC control: Enable/disable echo cancellation during active call.
     // This allows UI to toggle AEC on/off without restarting audio processing.
     void setAecEnabled(bool enabled);

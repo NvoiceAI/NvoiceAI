@@ -28,7 +28,6 @@ int nvoiceai_sdk_init_audio_processing_with_config(nvoiceai_handle_t h, const ch
 int nvoiceai_sdk_start(nvoiceai_handle_t h, nvoiceai_frame_cb_t cb, void* user_data);
 int nvoiceai_sdk_process_offline(nvoiceai_handle_t h, const float* mic, const float* playback, float* output, size_t frameSize);
 void nvoiceai_sdk_stop(nvoiceai_handle_t h);
-void nvoiceai_sdk_set_privacy(nvoiceai_handle_t h, int privacy);
 
 // Runtime AEC control: Enable/disable echo cancellation during active call.
 // This allows UI to toggle AEC on/off without restarting audio processing.

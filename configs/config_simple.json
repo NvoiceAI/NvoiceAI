@@ -12,9 +12,14 @@
     "description": "[Built-in] Echo cancellation. Enable mobile if it runs on resource-limited device"
   },
   "ns": {
-    "enabled": true,
+    "enabled": false,
     "level": 2,
     "description": "[Built-in] Noise suppression. level: 1=low, 2=moderate, 3=high, 4=veryhigh"
+  },
+  "rnnoise": {
+    "enabled": true,
+    "blend_factor": 0.8,
+    "description": "blend_factor: 0.0 = no denoising (preserves all input), 1.0 = full RNNoise (aggressive denoising). Recommended: 0.7-0.9 for better speech preservation"
   },
   "gain_control": {
     "agc1_enabled": true,

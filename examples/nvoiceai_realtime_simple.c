@@ -7,15 +7,8 @@
 #include <sndfile.h>
 #include "nvoiceai_sdk_c.h"
 #include "config_loader.h"
+#include "common.h"
 
-/* Demo duration in seconds (can be modified to change how long the demo runs) */
-#define DEMO_DURATION_SECONDS 60
-
-/* Interval in milliseconds for checking demo duration */
-#define DEMO_CHECK_INTERVAL_MS 500
-
-/* Interval in seconds for printing frame statistics */
-#define FRAME_PRINT_INTERVAL_SECONDS 5
 
 /* Global variables for audio file handling */
 static SNDFILE* mic_file = NULL;
@@ -174,31 +167,10 @@ int main(int argc, char* argv[]) {
     /* Print current configuration */
     print_config(&config);
     printf("\n");
-    
-    /* Get audio configuration values */
-    const int SAMPLE_RATE = config.audio.sample_rate;
-    const int CHANNELS = config.audio.channels;
-    const int FRAME_SIZE = (SAMPLE_RATE / 1000) * config.audio.frame_size_ms;
-    
-    /* Get output configuration values */
-    const char* output_dir = config.output.save_audio_files_directory;
-    
-    printf("Audio Configuration:\n");
-    printf("  Sample Rate: %d Hz\n", SAMPLE_RATE);
-    printf("  Channels: %d\n", CHANNELS);
-    printf("  Frame Size: %d samples (%d ms)\n\n", FRAME_SIZE, config.audio.frame_size_ms);
-    
-    /* Initialize WAV file output (enabled by default) */
-    printf("Initializing audio file output...\n");
-    if (!init_wav_files(output_dir, SAMPLE_RATE)) {
-        fprintf(stderr, "Error: Failed to initialize WAV files\n");
-        return -1;
-    }
-    printf("Audio files will be saved to: %s\n\n", output_dir);
-    
+
     /* Create SDK instance */
     printf("Creating SDK instance...\n");
-    nvoiceai_handle_t sdk = nvoiceai_sdk_create(SAMPLE_RATE, CHANNELS, FRAME_SIZE);
+    nvoiceai_handle_t sdk = nvoiceai_sdk_create_with_config(config_file_path);
     if (!sdk) {
         fprintf(stderr, "Error: Failed to create SDK instance\n");
         close_wav_files();
@@ -214,6 +186,29 @@ int main(int argc, char* argv[]) {
         return -1;
     }
     printf("Audio processing initialized successfully!\n\n");
+    
+    /* Get audio configuration values */
+    int sample_rate = 0;
+    int channels = 0;
+    int frame_size = 0;
+    nvoiceai_sdk_get_audio_config(sdk, &sample_rate, &channels, &frame_size);
+    struct AudioConfig audio_config = {sample_rate, channels, frame_size};
+    
+    /* Get output configuration values */
+    const char* output_dir = config.output.save_audio_files_directory;
+    
+    printf("Audio Configuration:\n");
+    printf("  Sample Rate: %d Hz\n", audio_config.sampleRate);
+    printf("  Channels: %d\n", audio_config.channels);
+    printf("  Frame Size: %d samples (10 ms)\n\n", audio_config.frameSize);
+    
+    /* Initialize WAV file output (enabled by default) */
+    printf("Initializing audio file output...\n");
+    if (!init_wav_files(output_dir, audio_config.sampleRate)) {
+        fprintf(stderr, "Error: Failed to initialize WAV files\n");
+        return -1;
+    }
+    printf("Audio files will be saved to: %s\n\n", output_dir);
     
     /* Setup signal handler for graceful shutdown */
     signal(SIGINT, signal_handler);

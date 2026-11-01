@@ -28,7 +28,10 @@ pkg_check_modules(PORTAUDIO REQUIRED portaudio-2.0)
 pkg_check_modules(SNDFILE REQUIRED sndfile)
 
 # C++ realtime example with audio file saving (enabled by default)
-add_executable(nvoiceai_realtime_simple examples/nvoiceai_realtime_simple.cpp)
+add_executable(nvoiceai_realtime_simple 
+    examples/nvoiceai_realtime_simple.cpp 
+    ${UTILITIES_DIR}/ConfigLoader.cpp
+)
 
 message(STATUS "Building nvoiceai_realtime_simple with audio WAV file output enabled")
 
@@ -84,6 +87,7 @@ target_link_directories(nvoiceai_realtime_simple_c PRIVATE
 # Offline audio processor - for batch processing and testing (with audio file saving enabled by default)
 add_executable(offline_audio_processor 
     examples/offline_audio_processor.cpp
+    ${UTILITIES_DIR}/ConfigLoader.cpp
 )
 
 message(STATUS "Building offline_audio_processor with audio WAV file output enabled")
@@ -124,6 +128,7 @@ if(SHERPA_ONNX_FOUND)
     add_executable(nvoiceai_realtime_sherpa_asr 
         examples/nvoiceai_realtime_sherpa_asr.cpp
         ${SDK_SRC_DIR}/SherpaOnnxManager.cpp
+        ${UTILITIES_DIR}/ConfigLoader.cpp
     )
     
     target_include_directories(nvoiceai_realtime_sherpa_asr PRIVATE

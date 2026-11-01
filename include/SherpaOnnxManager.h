@@ -1,6 +1,6 @@
 #pragma once
 #include <string>
-#include "ConfigManager.h"
+#include "ConfigLoader.h"
 #include "sherpa-onnx/c-api/c-api.h"
 
 class SherpaOnnxManager {
@@ -15,8 +15,8 @@ public:
     // Allow moving with noexcept
     SherpaOnnxManager(SherpaOnnxManager&&) noexcept;
 
-    // Initialize recognizer with ConfigManager::SherpaOnnxConfig
-    bool Init(const ConfigManager::SherpaOnnxConfig& cfg);
+    // Initialize recognizer with ConfigLoader::SherpaOnnxConfig
+    bool Init(const ConfigLoader::SherpaOnnxConfig& cfg);
 
     // Accept waveform (samples in [-1..1]) into the active stream.
     void AcceptWaveform(const float* samples, int32_t nframes);

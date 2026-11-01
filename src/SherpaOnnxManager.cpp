@@ -1,5 +1,5 @@
 #include "SherpaOnnxManager.h"
-#include "ConfigManager.h"
+#include "ConfigLoader.h"
 #include <cstring>
 #include <iostream>
 #include "sherpa-onnx/c-api/c-api.h"
@@ -26,7 +26,7 @@ SherpaOnnxManager::~SherpaOnnxManager() {
     recognizer_ = nullptr;
 }
 
-bool SherpaOnnxManager::Init(const ConfigManager::SherpaOnnxConfig& cfg) {
+bool SherpaOnnxManager::Init(const ConfigLoader::SherpaOnnxConfig& cfg) {
     sample_rate_ = cfg.sample_rate;
     
     SherpaOnnxOnlineRecognizerConfig c;

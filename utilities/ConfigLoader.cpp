@@ -1,4 +1,4 @@
-#include "ConfigManager.h"
+#include "ConfigLoader.h"
 #include <iostream>
 #include <fstream>
 #include <cstring>
@@ -7,13 +7,9 @@
 // For production, consider using a proper JSON library like nlohmann/json
 
 // Static member initialization
-ConfigManager::AudioConfig ConfigManager::audio_config_;
-ConfigManager::AecConfig ConfigManager::aec_config_;
-ConfigManager::GainControlConfig ConfigManager::gain_control_config_;
-ConfigManager::SysOutGainConfig ConfigManager::sys_out_gain_config_;
-ConfigManager::OutputConfig ConfigManager::output_config_;
-ConfigManager::SherpaOnnxConfig ConfigManager::sherpa_onnx_config_;
-bool ConfigManager::loaded_ = false;
+ConfigLoader::OutputConfig ConfigLoader::output_config_;
+ConfigLoader::SherpaOnnxConfig ConfigLoader::sherpa_onnx_config_;
+bool ConfigLoader::loaded_ = false;
 
 /**
  * Extract a JSON section (object) from the full JSON
@@ -128,42 +124,16 @@ static float extractJsonFloat(const std::string& json, const std::string& key, f
     }
 }
 
-bool ConfigManager::load(const std::string& config_file) {
+bool ConfigLoader::load(const std::string& config_file) {
     std::ifstream file(config_file);
     if (!file.is_open()) {
-        std::cerr << "ConfigManager: Cannot open config file: " << config_file << "\n";
+        std::cerr << "ConfigLoader: Cannot open config file: " << config_file << "\n";
         return false;
     }
     
     // Read entire file
     std::string json((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
     file.close();
-    
-    // Parse audio section
-    std::string audio_section = extractJsonSection(json, "audio");
-    audio_config_.sample_rate = extractJsonInt(audio_section, "sample_rate", 16000);
-    audio_config_.channels = extractJsonInt(audio_section, "channels", 1);
-    audio_config_.frame_size_ms = extractJsonInt(audio_section, "frame_size_ms", 10);
-    
-    // Parse AEC section
-    std::string aec_section = extractJsonSection(json, "aec");
-    aec_config_.enabled = extractJsonBool(aec_section, "enabled", true);
-    aec_config_.mobile_mode = extractJsonBool(aec_section, "mobile_mode", false);
-    aec_config_.high_pass_filter_enabled = extractJsonBool(aec_section, "high_pass_filter_enabled", true);
-    
-    // Parse gain control section
-    std::string gain_control_section = extractJsonSection(json, "gain_control");
-    gain_control_config_.agc1_enabled = extractJsonBool(gain_control_section, "agc1_enabled", true);
-    gain_control_config_.agc1_mode = extractJsonValue(gain_control_section, "agc1_mode");
-    if (gain_control_config_.agc1_mode.empty()) {
-        gain_control_config_.agc1_mode = "adaptive_analog";
-    }
-    gain_control_config_.agc2_enabled = extractJsonBool(gain_control_section, "agc2_enabled", true);
-
-    // Parse system output gain section
-    std::string sys_out_gain_section = extractJsonSection(json, "sys_out_gain");
-    sys_out_gain_config_.pre_gain = extractJsonFloat(sys_out_gain_section, "pre_gain", 1.0f);
-    sys_out_gain_config_.post_gain_ratio = extractJsonFloat(sys_out_gain_section, "post_gain_ratio", 1.0f);
 
     // Parse output section
     std::string output_section = extractJsonSection(json, "output");
@@ -203,57 +173,22 @@ bool ConfigManager::load(const std::string& config_file) {
     if (sherpa_onnx_config_.tokens.empty()) sherpa_onnx_config_.tokens = "tokens.txt";
     
     loaded_ = true;
-    
-    std::cout << "ConfigManager: Configuration loaded from " << config_file << "\n";
-    
+
+    std::cout << "ConfigLoader: Configuration loaded from " << config_file << "\n";
+
     return true;
 }
 
-const ConfigManager::AudioConfig& ConfigManager::getAudioConfig() {
-    return audio_config_;
-}
-
-const ConfigManager::AecConfig& ConfigManager::getAecConfig() {
-    return aec_config_;
-}
-
-const ConfigManager::GainControlConfig& ConfigManager::getGainControlConfig() {
-    return gain_control_config_;
-}
-
-const ConfigManager::SysOutGainConfig& ConfigManager::getSysOutGainConfig() {
-    return sys_out_gain_config_;
-}
-
-const ConfigManager::OutputConfig& ConfigManager::getOutputConfig() {
+const ConfigLoader::OutputConfig& ConfigLoader::getOutputConfig() {
     return output_config_;
 }
 
-const ConfigManager::SherpaOnnxConfig& ConfigManager::getSherpaOnnxConfig() {
+const ConfigLoader::SherpaOnnxConfig& ConfigLoader::getSherpaOnnxConfig() {
     return sherpa_onnx_config_;
 }
 
-void ConfigManager::printConfig() {
+void ConfigLoader::printConfig() {
     std::cout << "\n=== Current Configuration ===\n";
-    std::cout << "Audio:\n";
-    std::cout << "  Sample Rate: " << audio_config_.sample_rate << " Hz\n";
-    std::cout << "  Channels: " << audio_config_.channels << "\n";
-    std::cout << "  Frame Size: " << audio_config_.frame_size_ms << " ms ("
-              << audio_config_.frameSize() << " samples)\n";
-    
-    std::cout << "AEC:\n";
-    std::cout << "  Enabled: " << (aec_config_.enabled ? "true" : "false") << "\n";
-    std::cout << "  Mobile Mode: " << (aec_config_.mobile_mode ? "true" : "false") << "\n";
-    std::cout << "  High Pass Filter: " << (aec_config_.high_pass_filter_enabled ? "true" : "false") << "\n";
-    
-    std::cout << "Gain Control:\n";
-    std::cout << "  AGC1 Enabled: " << (gain_control_config_.agc1_enabled ? "true" : "false") << "\n";
-    std::cout << "  AGC1 Mode: " << gain_control_config_.agc1_mode << "\n";
-    std::cout << "  AGC2 Enabled: " << (gain_control_config_.agc2_enabled ? "true" : "false") << "\n";
-    
-    std::cout << "System Output Gain:\n";
-    std::cout << "  Pre Gain: " << sys_out_gain_config_.pre_gain << "\n";
-    std::cout << "  Post Gain Ratio: " << sys_out_gain_config_.post_gain_ratio << "\n";
     
     std::cout << "Output:\n";
     std::cout << "  Audio File Saving Enabled: " << (output_config_.save_audio_files_enabled ? "true" : "false") << "\n";

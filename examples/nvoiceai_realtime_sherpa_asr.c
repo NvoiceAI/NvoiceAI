@@ -11,11 +11,9 @@
 
 #include "nvoiceai_sdk_c.h"
 #include "config_loader.h"
+#include "ConfigLoader.h"
 #include "SherpaOnnxManager.h"
-
-// Configuration constants
-#define DEMO_DURATION_SECONDS 60
-#define DEMO_CHECK_INTERVAL_MS 500
+#include "common.h"
 
 // Global state for ASR
 static char last_text[1024] = {0};
@@ -91,16 +89,6 @@ int main(int argc, char* argv[]) {
     }
     print_config(&config);
 
-    /* Get audio configuration values */
-    const int SAMPLE_RATE = config.audio.sample_rate;
-    const int CHANNELS = config.audio.channels;
-    const int FRAME_SIZE = (SAMPLE_RATE / 1000) * config.audio.frame_size_ms;
-    
-    printf("Audio Configuration:\n");
-    printf("  Sample Rate: %d Hz\n", SAMPLE_RATE);
-    printf("  Channels: %d\n", CHANNELS);
-    printf("  Frame Size: %d samples (%d ms)\n\n", FRAME_SIZE, config.audio.frame_size_ms);
-    
     // Initialize ASR manager if enabled
     void* asr_manager = NULL;
     if (config.sherpa_onnx.enabled) {
@@ -115,7 +103,7 @@ int main(int argc, char* argv[]) {
         SherpaOnnxManager* manager = (SherpaOnnxManager*)asr_manager;
         
         // Convert C config struct to C++ SherpaOnnxConfig
-        ConfigManager::SherpaOnnxConfig sherpa_cpp_config;
+        ConfigLoader::SherpaOnnxConfig sherpa_cpp_config;
         sherpa_cpp_config.enabled = config.sherpa_onnx.enabled;
         sherpa_cpp_config.model_dir = config.sherpa_onnx.model_dir;
         sherpa_cpp_config.sample_rate = config.sherpa_onnx.sample_rate;
@@ -142,20 +130,32 @@ int main(int argc, char* argv[]) {
         
         printf("\n✓ SherpaOnnx ASR initialized successfully\n");
         printf("  Model: %s\n", config.sherpa_onnx.model_dir);
-        printf("  Sample Rate: %d Hz\n", config.audio.sample_rate);
+        printf("  Sample Rate: %d Hz\n", config.sherpa_onnx.sample_rate);
         printf("\n");
     } else {
         printf("ASR: Disabled in configuration\n\n");
     }
-    
+
     // Create SDK instance using C API
     printf("Initializing NvoiceAI SDK (C API)...\n");  
-    nvoiceai_handle_t sdk = nvoiceai_sdk_create(SAMPLE_RATE, CHANNELS, FRAME_SIZE);
+    nvoiceai_handle_t sdk = nvoiceai_sdk_create_with_config(config_file_path);
     if (!sdk) {
         fprintf(stderr, "Error: Failed to create SDK instance\n");
         if (asr_manager) delete (SherpaOnnxManager*) asr_manager;
         return -1;
     }
+    
+    /* Get audio configuration values */
+    int sample_rate = 0;
+    int channels = 0;
+    int frame_size = 0;
+    nvoiceai_sdk_get_audio_config(sdk, &sample_rate, &channels, &frame_size);
+    struct AudioConfig audio_config = {sample_rate, channels, frame_size};
+    
+    printf("Audio Configuration:\n");
+    printf("  Sample Rate: %d Hz\n", audio_config.sampleRate);
+    printf("  Channels: %d\n", audio_config.channels);
+    printf("  Frame Size: %d samples (10 ms)\n\n", audio_config.frameSize);
     
     // Initialize audio processing (AEC/NS/Gain) from the configuration file
     if (nvoiceai_sdk_init_audio_processing_with_config(sdk, config_file_path) != 0) {
@@ -165,14 +165,8 @@ int main(int argc, char* argv[]) {
         return -1;
     }
     
-    // Apply AEC configuration
-    nvoiceai_sdk_set_aec_enabled(sdk, config.aec.enabled);
-    printf("AEC: %s\n", config.aec.enabled ? "enabled" : "disabled");
-    printf("Mobile Mode: %s\n\n", config.aec.mobile_mode ? "enabled" : "disabled");
-    
     // Start real-time audio processing with ASR callback
     printf("Starting real-time audio processing...\n");
-    
     if (nvoiceai_sdk_start(sdk, capture_postprocess_callback, asr_manager) != 0) {
         fprintf(stderr, "Error: Failed to start SDK\n");
         nvoiceai_sdk_destroy(sdk);

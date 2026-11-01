@@ -6,18 +6,10 @@
 #include <filesystem>
 #include <sndfile.h>
 #include "NvoiceAiSdk.h"
-#include "ConfigManager.h"
+#include "ConfigLoader.h"
+#include "common.h"
 
 namespace fs = std::filesystem;
-
-// Demo duration in seconds (can be modified to change how long the demo runs)
-#define DEMO_DURATION_SECONDS 60
-
-// Interval in milliseconds for checking demo duration
-#define DEMO_CHECK_INTERVAL_MS 500
-
-// Interval in seconds for printing frame statistics
-#define FRAME_PRINT_INTERVAL_SECONDS 5
 
 // Global variables for audio file handling
 static SNDFILE* mic_file = nullptr;
@@ -156,33 +148,36 @@ int main(int argc, char* argv[]) {
     }
     std::string config_file_path = (argc == 2) ? argv[1] : "configs/config_simple.json";
     std::cout << "Loading configuration from: " << config_file_path << "\n";
-    if (!ConfigManager::load(config_file_path)) {
+    if (!ConfigLoader::load(config_file_path)) {
         std::cerr << "Error: Failed to load " << config_file_path << "\n";
         return -1;
     }
     std::cout << "Configuration loaded successfully!\n\n";
     
     // Print current configuration
-    ConfigManager::printConfig();
+    ConfigLoader::printConfig();
     std::cout << "\n";
-    
-    // Get audio configuration from ConfigManager
-    const auto& audio_config = ConfigManager::getAudioConfig();
-    const int SAMPLE_RATE = audio_config.sample_rate;
-    const int CHANNELS = audio_config.channels;
-    const int FRAME_SIZE = audio_config.frameSize();
-    
+
+    // Create SDK instance
+    std::cout << "Creating SDK instance...\n";
+    NvoiceAiSdk sdk(config_file_path);
+
+    // Get audio configuration from ConfigLoader
+    const int sampleRate = sdk.sampleRate();
+    const int channels = sdk.channels();
+    const int frameSize = sdk.frameSize();
+
     std::cout << "Audio Configuration:\n";
-    std::cout << "  Sample Rate: " << SAMPLE_RATE << " Hz\n";
-    std::cout << "  Channels: " << CHANNELS << "\n";
-    std::cout << "  Frame Size: " << FRAME_SIZE << " samples (" << audio_config.frame_size_ms << "ms)\n\n";
-    
+    std::cout << "  Sample Rate: " << sampleRate << " Hz\n";
+    std::cout << "  Channels: " << channels << "\n";
+    std::cout << "  Frame Size: " << frameSize << " samples (" << frameSize * 1000 / sampleRate << "ms)\n\n";
+
     // Get output configuration
-    const auto& output_config = ConfigManager::getOutputConfig();
+    const auto& output_config = ConfigLoader::getOutputConfig();
     std::string output_dir = output_config.save_audio_files_directory;
     if (output_config.save_audio_files_enabled) {
         std::cout << "Initializing audio file output...\n";
-        if (!init_wav_files(output_dir, SAMPLE_RATE)) {
+        if (!init_wav_files(output_dir, sampleRate)) {
             std::cerr << "Error: Failed to initialize WAV files\n";
             return -1;
         }
@@ -190,10 +185,6 @@ int main(int argc, char* argv[]) {
     } else {
         std::cout << "WAV file output disabled in configuration\n\n";
     }
-    
-    // Create SDK instance
-    std::cout << "Creating SDK instance...\n";
-    NvoiceAiSdk sdk(SAMPLE_RATE, CHANNELS, FRAME_SIZE);
     
     // Initialize audio processing (AEC/NS/Gain) from the configuration file.
     std::cout << "Initializing audio processing...\n";

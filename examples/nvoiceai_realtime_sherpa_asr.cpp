@@ -6,12 +6,9 @@
 #include <mutex>
 
 #include "NvoiceAiSdk.h"
-#include "ConfigManager.h"
+#include "ConfigLoader.h"
 #include "SherpaOnnxManager.h"
-
-// Configuration constants
-constexpr int DEMO_DURATION_SECONDS = 60;
-constexpr int DEMO_CHECK_INTERVAL_MS = 500;
+#include "common.h"
 
 // Global state for ASR
 static std::string last_text;
@@ -74,15 +71,13 @@ int main(int argc, char* argv[]) {
 
     // Load configuration
     std::cout << "Loading configuration from: " << config_file_path << "\n";
-    if (!ConfigManager::load(config_file_path)) {
+    if (!ConfigLoader::load(config_file_path)) {
         std::cerr << "Warning: Failed to load " << config_file_path << ", using default values\n";
     }
-    ConfigManager::printConfig();
-    
+    ConfigLoader::printConfig();
+
     // Get configuration parameters
-    const auto& audio_config = ConfigManager::getAudioConfig();
-    const auto& aec_config = ConfigManager::getAecConfig();
-    const auto& sherpa_config = ConfigManager::getSherpaOnnxConfig();
+    const auto& sherpa_config = ConfigLoader::getSherpaOnnxConfig();
     bool sherpa_enabled = sherpa_config.enabled;
     
     // Initialize ASR manager if enabled
@@ -104,22 +99,16 @@ int main(int argc, char* argv[]) {
     } else {
         std::cout << "ASR: Disabled in configuration\n\n";
     }
-    
-    // Create SDK instance using C++ API with ConfigManager parameters
+
+    // Create SDK instance using C++ API with ConfigLoader parameters
     std::cout << "Initializing NvoiceAI SDK (C++ API)...\n";
-    int frame_size = audio_config.frameSize();
-    NvoiceAiSdk sdk(audio_config.sample_rate, audio_config.channels, frame_size);
+    NvoiceAiSdk sdk(config_file_path);
     
     // Initialize audio processing (AEC/NS/Gain) from the configuration file.
     if (!sdk.initAudioProcessing(config_file_path)) {
         std::cerr << "Error: Failed to initialize audio processing\n";
         return -1;
     }
-    
-    // Apply AEC configuration
-    sdk.setAecEnabled(aec_config.enabled);
-    std::cout << "AEC: " << (aec_config.enabled ? "enabled" : "disabled") << "\n";
-    std::cout << "Mobile Mode: " << (aec_config.mobile_mode ? "enabled" : "disabled") << "\n\n";
     
     // Start real-time audio processing with ASR callback
     std::cout << "Starting real-time audio processing...\n";

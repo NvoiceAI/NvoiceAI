@@ -39,12 +39,7 @@
 #include "nvoiceai_sdk_c.h"
 #include "config_loader.h"
 #include "needle.h"
-
-/* Demo duration in seconds */
-#define DEMO_DURATION_SECONDS 60
-
-/* Interval in milliseconds for checking demo duration */
-#define DEMO_CHECK_INTERVAL_MS 500
+#include "common.h"
 
 /* Maximum transcript length kept per blackboard */
 #define TRANSCRIPT_CAPACITY 16384
@@ -699,37 +694,40 @@ int main(int argc, char* argv[]) {
 
     needle_set_audio(needle_language, needle_keywords, 0);
 
-    const int SAMPLE_RATE = config.audio.sample_rate;
-    const int CHANNELS = config.audio.channels;
-    const int FRAME_SIZE = (SAMPLE_RATE / 1000) * config.audio.frame_size_ms;
-
-    printf("Audio Configuration:\n");
-    printf("  Sample Rate: %d Hz\n", SAMPLE_RATE);
-    printf("  Channels: %d\n", CHANNELS);
-    printf("  Frame Size: %d samples (%d ms)\n\n", FRAME_SIZE, config.audio.frame_size_ms);
-
-    if (SAMPLE_RATE != needle_sample_rate || CHANNELS != 1) {
-        fprintf(stderr,
-                "Warning: needle expects %d Hz mono audio, but the audio section specifies "
-                "%d Hz / %d channel(s). Transcription quality may be degraded.\n\n",
-                needle_sample_rate, SAMPLE_RATE, CHANNELS);
-    }
-
-    /* --- Start the two ASR workers --- */
-    if (channel_init(&chan_near, "near", &board_near, 1, needle_chunk_samples) != 0 ||
-        channel_init(&chan_far, "far", &board_far, 0, far_chunk_samples) != 0) {
-        fprintf(stderr, "Error: Failed to start ASR worker threads\n");
-        channel_destroy(&chan_near);
-        channel_destroy(&chan_far);
-        return -1;
-    }
-
     /* --- Create and initialize the NvoiceAI SDK --- */
     printf("Creating SDK instance...\n");
     nvoiceai_handle_t sdk = nvoiceai_sdk_create_with_config(config_file_path);
     if (!sdk) {
         fprintf(stderr, "Error: Failed to create SDK instance\n");
         demo_running = 0;
+        channel_destroy(&chan_near);
+        channel_destroy(&chan_far);
+        return -1;
+    }
+
+    /* Get audio configuration values */
+    int sample_rate = 0;
+    int channels = 0;
+    int frame_size = 0;
+    nvoiceai_sdk_get_audio_config(sdk, &sample_rate, &channels, &frame_size);
+    struct AudioConfig audio_config = {sample_rate, channels, frame_size};
+
+    printf("Audio Configuration:\n");
+    printf("  Sample Rate: %d Hz\n", audio_config.sampleRate);
+    printf("  Channels: %d\n", audio_config.channels);
+    printf("  Frame Size: %d samples (10 ms)\n\n", audio_config.frameSize);
+
+    if (audio_config.sampleRate != needle_sample_rate || audio_config.channels != 1) {
+        fprintf(stderr,
+                "Warning: needle expects %d Hz mono audio, but the audio section specifies "
+                "%d Hz / %d channel(s). Transcription quality may be degraded.\n\n",
+                needle_sample_rate, audio_config.sampleRate, audio_config.channels);
+    }
+
+    /* --- Start the two ASR workers --- */
+    if (channel_init(&chan_near, "near", &board_near, 1, needle_chunk_samples) != 0 ||
+        channel_init(&chan_far, "far", &board_far, 0, far_chunk_samples) != 0) {
+        fprintf(stderr, "Error: Failed to start ASR worker threads\n");
         channel_destroy(&chan_near);
         channel_destroy(&chan_far);
         return -1;
@@ -745,8 +743,6 @@ int main(int argc, char* argv[]) {
         return -1;
     }
     printf("Audio processing initialized successfully!\n\n");
-
-    nvoiceai_sdk_set_aec_enabled(sdk, config.aec.enabled);
 
     signal(SIGINT, signal_handler);
     signal(SIGTERM, signal_handler);

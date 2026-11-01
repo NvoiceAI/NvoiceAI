@@ -24,12 +24,7 @@
 #include "nvoiceai_sdk_c.h"
 #include "config_loader.h"
 #include "needle.h"
-
-/* Demo duration in seconds (can be modified to change how long the demo runs) */
-#define DEMO_DURATION_SECONDS 60
-
-/* Interval in milliseconds for checking demo duration */
-#define DEMO_CHECK_INTERVAL_MS 500
+#include "common.h"
 
 /* Maximum length of the committed transcript we keep for display */
 #define TRANSCRIPT_CAPACITY 8192
@@ -460,28 +455,31 @@ int main(int argc, char* argv[]) {
      * transcription, not needle_stream_transcribe_process). */
     needle_set_audio(needle_language, needle_keywords, 0);
 
-    const int SAMPLE_RATE = config.audio.sample_rate;
-    const int CHANNELS = config.audio.channels;
-    const int FRAME_SIZE = (SAMPLE_RATE / 1000) * config.audio.frame_size_ms;
-
-    printf("Audio Configuration:\n");
-    printf("  Sample Rate: %d Hz\n", SAMPLE_RATE);
-    printf("  Channels: %d\n", CHANNELS);
-    printf("  Frame Size: %d samples (%d ms)\n\n", FRAME_SIZE, config.audio.frame_size_ms);
-
-    if (SAMPLE_RATE != NEEDLE_SAMPLE_RATE || CHANNELS != 1) {
-        fprintf(stderr,
-                "Warning: needle expects %d Hz mono audio, but the audio section specifies "
-                "%d Hz / %d channel(s). Transcription quality/behavior may be degraded.\n\n",
-                NEEDLE_SAMPLE_RATE, SAMPLE_RATE, CHANNELS);
-    }
-
     /* --- Create and initialize the NvoiceAI SDK --- */
     printf("Creating SDK instance...\n");
     nvoiceai_handle_t sdk = nvoiceai_sdk_create_with_config(config_file_path);
     if (!sdk) {
         fprintf(stderr, "Error: Failed to create SDK instance\n");
         return -1;
+    }
+
+    /* Get audio configuration values */
+    int sample_rate = 0;
+    int channels = 0;
+    int frame_size = 0;
+    nvoiceai_sdk_get_audio_config(sdk, &sample_rate, &channels, &frame_size);
+    struct AudioConfig audio_config = {sample_rate, channels, frame_size};
+
+    printf("Audio Configuration:\n");
+    printf("  Sample Rate: %d Hz\n", audio_config.sampleRate);
+    printf("  Channels: %d\n", audio_config.channels);
+    printf("  Frame Size: %d samples (10 ms)\n\n", audio_config.frameSize);
+
+    if (audio_config.sampleRate != NEEDLE_SAMPLE_RATE || audio_config.channels != 1) {
+        fprintf(stderr,
+                "Warning: needle expects %d Hz mono audio, but the audio section specifies "
+                "%d Hz / %d channel(s). Transcription quality/behavior may be degraded.\n\n",
+                NEEDLE_SAMPLE_RATE, audio_config.sampleRate, audio_config.channels);
     }
 
     printf("Initializing audio processing (AEC/NS/Gain) from %s...\n", config_file_path);
@@ -491,11 +489,6 @@ int main(int argc, char* argv[]) {
         return -1;
     }
     printf("Audio processing initialized successfully!\n\n");
-
-    /* Apply AEC configuration explicitly (mirrors other demos) */
-    nvoiceai_sdk_set_aec_enabled(sdk, config.aec.enabled);
-    printf("AEC: %s\n", config.aec.enabled ? "enabled" : "disabled");
-    printf("Mobile Mode: %s\n\n", config.aec.mobile_mode ? "enabled" : "disabled");
 
     signal(SIGINT, signal_handler);
     signal(SIGTERM, signal_handler);

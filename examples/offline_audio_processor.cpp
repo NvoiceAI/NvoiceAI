@@ -7,13 +7,14 @@
 #include <fstream>
 
 #include "nvoiceai_sdk_c.h"
-#include "ConfigManager.h"
+#include "ConfigLoader.h"
 #include "sndfile.h"
+#include "common.h"
 
 /**
  * Read audio frames from input file
  */
-bool read_audio_frames(const std::string& input_file_path, std::vector<float>& audio_data) {
+bool read_audio_frames(const std::string& input_file_path, std::vector<float>& audio_data, const AudioConfig& audio_config) {
     SF_INFO sf_info;
     memset(&sf_info, 0, sizeof(sf_info));
     
@@ -31,14 +32,15 @@ bool read_audio_frames(const std::string& input_file_path, std::vector<float>& a
     std::cout << "  Duration: " << (float)sf_info.frames / sf_info.samplerate << " seconds\n";
     
     // Check if the input file has the expected format
-    const auto& audio_config = ConfigManager::getAudioConfig();
-    if (sf_info.samplerate != audio_config.sample_rate) {
-        std::cerr << "Warning: Expected sample rate " << audio_config.sample_rate << " Hz, got " 
-                  << sf_info.samplerate << " Hz. Resampling may be needed.\n";
+    if (sf_info.samplerate != audio_config.sampleRate) {
+        std::cerr << "Error: Expected sample rate " << audio_config.sampleRate << " Hz, got " 
+                  << sf_info.samplerate << " Hz.\n";
+        return false;
     }
     if (sf_info.channels != audio_config.channels) {
-        std::cerr << "Warning: Expected " << audio_config.channels << " channel(s), got " 
-                  << sf_info.channels << ". Using first channel only.\n";
+        std::cerr << "Error: Expected " << audio_config.channels << " channel(s), got " 
+                  << sf_info.channels << ".\n";
+        return false;
     }
     
     // Read all audio data
@@ -56,12 +58,11 @@ bool read_audio_frames(const std::string& input_file_path, std::vector<float>& a
 /**
  * Write processed audio to output file
  */
-bool write_audio_frames(const std::string& output_file_path, const std::vector<float>& audio_data) {
+bool write_audio_frames(const std::string& output_file_path, const std::vector<float>& audio_data, const AudioConfig& audio_config) {
     SF_INFO sf_info;
     memset(&sf_info, 0, sizeof(sf_info));
-    
-    const auto& audio_config = ConfigManager::getAudioConfig();
-    sf_info.samplerate = audio_config.sample_rate;
+
+    sf_info.samplerate = audio_config.sampleRate;
     sf_info.channels = audio_config.channels;
     sf_info.format = SF_FORMAT_WAV | SF_FORMAT_PCM_16;
     
@@ -84,7 +85,7 @@ bool write_audio_frames(const std::string& output_file_path, const std::vector<f
     std::cout << "  Sample rate: " << sf_info.samplerate << " Hz\n";
     std::cout << "  Channels: " << sf_info.channels << "\n";
     std::cout << "  Frames written: " << frames_written << "\n";
-    std::cout << "  Duration: " << (float)frames_written / audio_config.sample_rate << " seconds\n";
+    std::cout << "  Duration: " << (float)frames_written / audio_config.sampleRate << " seconds\n";
     
     sf_close(file);
     return true;
@@ -123,11 +124,34 @@ int main(int argc, char* argv[]) {
     
     // Load configuration from JSON file
     std::cout << "Loading configuration from " << config_file << "...\n";
-    if (!ConfigManager::load(config_file)) {
+    if (!ConfigLoader::load(config_file)) {
         std::cerr << "Warning: Could not load " << config_file << ", using default values\n";
     }
-    ConfigManager::printConfig();
-    
+    ConfigLoader::printConfig();
+
+    // Create SDK instance
+    std::cout << "Initializing NvoiceAI SDK...\n";
+    nvoiceai_handle_t sdk = nvoiceai_sdk_create_with_config(config_file.c_str());
+    if (!sdk) {
+        std::cerr << "Error: Failed to create SDK instance\n";
+        return 1;
+    }
+
+    // Get audio configuration
+    int sample_rate = 0;
+    int channels = 0;
+    int frame_size = 0;
+    nvoiceai_sdk_get_audio_config(sdk, &sample_rate, &channels, &frame_size);
+    AudioConfig audio_config{sample_rate, channels, frame_size};
+
+    // Initialize audio processing (AEC/NS/Gain) from config.json
+    if (nvoiceai_sdk_init_audio_processing_with_config(sdk, config_file.c_str()) != 0) {
+        std::cerr << "Error: Failed to initialize audio processing\n";
+        nvoiceai_sdk_destroy(sdk);
+        return 1;
+    }
+    std::cout << "SDK initialized successfully\n\n";
+
     std::cout << "\nInput files:\n";
     std::cout << "  Mic file: " << mic_file << "\n";
     std::cout << "  Playback file: " << playback_file << "\n";
@@ -138,13 +162,13 @@ int main(int argc, char* argv[]) {
     std::vector<float> playback_audio;
     
     std::cout << "\nReading input audio files...\n";
-    if (!read_audio_frames(mic_file, mic_audio)) {
+    if (!read_audio_frames(mic_file, mic_audio, audio_config)) {
         return 1;
     }
     std::cout << "\n";
 
     std::cout << "Reading playback audio file...\n";
-    if (!read_audio_frames(playback_file, playback_audio)) {
+    if (!read_audio_frames(playback_file, playback_audio, audio_config)) {
         return 1;
     }
     std::cout << "\n";
@@ -157,59 +181,28 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    // Create SDK instance
-    std::cout << "Initializing NvoiceAI SDK...\n";
-    const auto& audio_config = ConfigManager::getAudioConfig();
-    const int SAMPLE_RATE = audio_config.sample_rate;
-    const int CHANNELS = audio_config.channels;
-    const int FRAME_SIZE = audio_config.frameSize();
-    nvoiceai_handle_t sdk = nvoiceai_sdk_create(SAMPLE_RATE, CHANNELS, FRAME_SIZE);
-    if (!sdk) {
-        std::cerr << "Error: Failed to create SDK instance\n";
-        return 1;
-    }
-
-    // Initialize audio processing (AEC/NS/Gain) from config.json
-    if (nvoiceai_sdk_init_audio_processing_with_config(sdk, config_file.c_str()) != 0) {
-        std::cerr << "Error: Failed to initialize audio processing\n";
-        nvoiceai_sdk_destroy(sdk);
-        return 1;
-    }
-    
-    // Apply configuration parameters
-    bool aec_enabled = ConfigManager::AecConfig().enabled;
-    nvoiceai_sdk_set_aec_enabled(sdk, aec_enabled ? 1 : 0);
-    
-    // Set pre-gain if different from default (1.0)
-    float pre_gain = ConfigManager::SysOutGainConfig().pre_gain;
-    if (pre_gain != 1.0f) {
-        nvoiceai_sdk_set_system_gain(sdk, pre_gain);
-    }
-    
-    std::cout << "SDK initialized successfully\n\n";
-
     // Process audio frames
     std::vector<float> output_audio;
-    size_t num_frames = mic_audio.size() / CHANNELS;
+    size_t num_frames = mic_audio.size() / audio_config.channels;
     
     std::cout << "Processing " << num_frames << " frames (" 
-              << (float)num_frames / SAMPLE_RATE << " seconds)...\n";
+              << (float)num_frames / audio_config.sampleRate << " seconds)...\n";
 
-    output_audio.resize(num_frames * CHANNELS);
+    output_audio.resize(num_frames * audio_config.channels);
     size_t frames_processed = 0;
 
-    for (size_t i = 0; i < num_frames; i += FRAME_SIZE) {
+    for (size_t i = 0; i < num_frames; i += audio_config.frameSize) {
         size_t remaining = num_frames - i;
-        size_t frames_to_process = (remaining < FRAME_SIZE) ? remaining : FRAME_SIZE;
+        size_t frames_to_process = (remaining < audio_config.frameSize) ? remaining : audio_config.frameSize;
 
         // Process frame
         if (nvoiceai_sdk_process_offline(
             sdk,
-            mic_audio.data() + i * CHANNELS,
-            playback_audio.data() + i * CHANNELS,
-            output_audio.data() + i * CHANNELS,
+            mic_audio.data() + i * audio_config.channels,
+            playback_audio.data() + i * audio_config.channels,
+            output_audio.data() + i * audio_config.channels,
             frames_to_process) != 0) {
-            std::cerr << "Error: Failed to process frame " << i / FRAME_SIZE << "\n";
+            std::cerr << "Error: Failed to process frame " << i / audio_config.frameSize << "\n";
             nvoiceai_sdk_destroy(sdk);
             return 1;
         }
@@ -217,17 +210,17 @@ int main(int argc, char* argv[]) {
         frames_processed += frames_to_process;
         
         // Progress indicator every 5 seconds
-        if (frames_processed % (SAMPLE_RATE * 5) == 0) {
+        if (frames_processed % (audio_config.sampleRate * 5) == 0) {
             float progress = (float)frames_processed / num_frames * 100.0f;
             std::cout << "  Processed: " << progress << "% (" << frames_processed
-                      << "/" << num_frames << " frames, " << (float)frames_processed / SAMPLE_RATE << "s)\n";
+                      << "/" << num_frames << " frames, " << (float)frames_processed / audio_config.sampleRate << "s)\n";
         }
     }
     std::cout << "Processing complete: " << frames_processed << " frames processed\n\n";
 
     // Write output audio
     std::cout << "Writing output audio...\n";
-    if (!write_audio_frames(output_file, output_audio)) {
+    if (!write_audio_frames(output_file, output_audio, audio_config)) {
         nvoiceai_sdk_destroy(sdk);
         return 1;
     }
@@ -236,7 +229,7 @@ int main(int argc, char* argv[]) {
     // Cleanup
     nvoiceai_sdk_destroy(sdk);
     std::cout << "✓ Processing Complete\n";
-    std::cout << "  Total output duration: " << (float)output_audio.size() / SAMPLE_RATE << " seconds\n\n";
+    std::cout << "  Total output duration: " << (float)output_audio.size() / audio_config.sampleRate << " seconds\n\n";
 
     return 0;
 }

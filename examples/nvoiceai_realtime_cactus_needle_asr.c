@@ -462,6 +462,7 @@ int main(int argc, char* argv[]) {
         fprintf(stderr, "Error: Failed to create SDK instance\n");
         return -1;
     }
+    nvoiceai_sdk_set_logging_level(sdk, LOGGING_LEVEL);
 
     /* Get audio configuration values */
     int sample_rate = 0;

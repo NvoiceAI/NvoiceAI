@@ -704,6 +704,7 @@ int main(int argc, char* argv[]) {
         channel_destroy(&chan_far);
         return -1;
     }
+    nvoiceai_sdk_set_logging_level(sdk, LOGGING_LEVEL);
 
     /* Get audio configuration values */
     int sample_rate = 0;

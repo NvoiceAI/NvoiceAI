@@ -14,6 +14,11 @@ public:
     explicit NvoiceAiSdk(const std::string& configFilePath = "");
     ~NvoiceAiSdk();
 
+    // Logging level control: set verbosity at runtime.
+    // Levels: 0=trace, 1=debug, 2=info, 3=warn, 4=err, 5=critical, 6=off
+    // Requires spdlog library (enabled by default in production builds)
+    void setLoggingLevel(int level);
+
     // Initialize audio processing (AEC/NS/Gain) using settings loaded from config.json.
     // If configFilePath is NULL/empty, the default configuration is used.
     // IMPORTANT: MUST be called successfully before start().

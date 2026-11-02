@@ -1,5 +1,8 @@
 #pragma once
 
+// Global logging level
+#define LOGGING_LEVEL 2
+
 // Demo duration in seconds (can be modified to change how long the demo runs)
 #define DEMO_DURATION_SECONDS 60
 

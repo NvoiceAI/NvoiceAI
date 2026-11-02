@@ -161,6 +161,7 @@ int main(int argc, char* argv[]) {
     // Create SDK instance
     std::cout << "Creating SDK instance...\n";
     NvoiceAiSdk sdk(config_file_path);
+    sdk.setLoggingLevel(LOGGING_LEVEL);
 
     // Get audio configuration from ConfigLoader
     const int sampleRate = sdk.sampleRate();

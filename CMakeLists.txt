@@ -6,6 +6,14 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_C_STANDARD 99)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 
+# Prioritize Homebrew packages (macOS) to avoid conda/system package conflicts
+if(APPLE)
+    list(PREPEND CMAKE_PREFIX_PATH "/opt/homebrew")
+endif()
+
+# Find spdlog (required by libnvoiceai_sdk.a which includes production logging)
+find_package(spdlog REQUIRED CONFIG)
+
 set(SDK_ROOT "${CMAKE_CURRENT_SOURCE_DIR}")
 set(SDK_INCLUDE_DIR "${SDK_ROOT}/include")
 set(SDK_SRC_DIR "${SDK_ROOT}/src")
@@ -47,6 +55,7 @@ target_link_libraries(nvoiceai_realtime_simple PRIVATE
     ${WEBRTC_APM_LIB}
     ${PORTAUDIO_LIBRARIES}
     ${SNDFILE_LIBRARIES}
+    spdlog::spdlog
 )
 
 target_link_directories(nvoiceai_realtime_simple PRIVATE
@@ -76,6 +85,7 @@ target_link_libraries(nvoiceai_realtime_simple_c PRIVATE
     ${PORTAUDIO_LIBRARIES}
     ${SNDFILE_LIBRARIES}
     c++
+    spdlog::spdlog
 )
 
 target_link_directories(nvoiceai_realtime_simple_c PRIVATE
@@ -103,6 +113,7 @@ target_link_libraries(offline_audio_processor PRIVATE
     ${WEBRTC_APM_LIB}
     ${PORTAUDIO_LIBRARIES}
     ${SNDFILE_LIBRARIES}
+    spdlog::spdlog
 )
 
 target_link_directories(offline_audio_processor PRIVATE
@@ -150,6 +161,7 @@ if(SHERPA_ONNX_FOUND)
         ${WEBRTC_APM_LIB}
         ${PORTAUDIO_LIBRARIES}
         ${SHERPA_ONNX_LIBRARIES}
+        spdlog::spdlog
     )
     
     message(STATUS "Configured nvoiceai_realtime_sherpa_asr (C++) with speech recognition")
@@ -183,6 +195,7 @@ if(SHERPA_ONNX_FOUND)
         ${WEBRTC_APM_LIB}
         ${PORTAUDIO_LIBRARIES}
         ${SHERPA_ONNX_LIBRARIES}
+        spdlog::spdlog
     )
     
     message(STATUS "Configured nvoiceai_realtime_sherpa_asr_c (C-style API) with speech recognition")
@@ -225,6 +238,7 @@ if(EXISTS "${CACTUS_NEEDLE_ROOT}/needle.h" AND EXISTS "${CACTUS_NEEDLE_ROOT}/lib
         ${WEBRTC_APM_LIB}
         ${PORTAUDIO_LIBRARIES}
         c++
+        spdlog::spdlog
     )
 
     message(STATUS "Configured nvoiceai_realtime_cactus_needle_asr (C API) with streaming speech recognition")
@@ -257,6 +271,7 @@ if(EXISTS "${CACTUS_NEEDLE_ROOT}/needle.h" AND EXISTS "${CACTUS_NEEDLE_ROOT}/lib
         ${PORTAUDIO_LIBRARIES}
         pthread
         c++
+        spdlog::spdlog
     )
 
     message(STATUS "Configured nvoiceai_realtime_cactus_needle_asr_fullduplex (C API) with full-duplex speech recognition")

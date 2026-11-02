@@ -103,7 +103,8 @@ int main(int argc, char* argv[]) {
     // Create SDK instance using C++ API with ConfigLoader parameters
     std::cout << "Initializing NvoiceAI SDK (C++ API)...\n";
     NvoiceAiSdk sdk(config_file_path);
-    
+    sdk.setLoggingLevel(LOGGING_LEVEL);
+
     // Initialize audio processing (AEC/NS/Gain) from the configuration file.
     if (!sdk.initAudioProcessing(config_file_path)) {
         std::cerr << "Error: Failed to initialize audio processing\n";

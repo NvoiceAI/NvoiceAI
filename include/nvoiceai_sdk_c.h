@@ -7,14 +7,19 @@ extern "C" {
 
 typedef void* nvoiceai_handle_t;
 typedef void (*nvoiceai_frame_cb_t)(const float* mic, const float* near, const float* far, const float* mix, size_t frameSize, void* user_data);
-
 nvoiceai_handle_t nvoiceai_sdk_create(int sampleRate, int channels, int frameSize);
 
 // Create SDK using audio format (sample_rate/channels/frame_size) loaded from config.json.
 // If configFilePath is NULL/empty, the default configuration is used.
 nvoiceai_handle_t nvoiceai_sdk_create_with_config(const char* configFilePath);
-
 void nvoiceai_sdk_destroy(nvoiceai_handle_t h);
+
+// Logging level control: set verbosity at runtime.
+// Levels: 0=trace, 1=debug, 2=info, 3=warn, 4=err, 5=critical, 6=off
+// Example: nvoiceai_sdk_set_logging_level(h, 1) for debug output
+//          nvoiceai_sdk_set_logging_level(h, 2) for normal (info) output
+// Requires spdlog library (enabled by default in production builds)
+void nvoiceai_sdk_set_logging_level(nvoiceai_handle_t h, int level);
 
 // Initialize audio processing (AEC/NS/Gain) using default configuration.
 // IMPORTANT: MUST be called successfully before nvoiceai_sdk_start().

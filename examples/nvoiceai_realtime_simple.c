@@ -176,6 +176,7 @@ int main(int argc, char* argv[]) {
         close_wav_files();
         return -1;
     }
+    nvoiceai_sdk_set_logging_level(sdk, LOGGING_LEVEL);
     
     /* Initialize audio processing (AEC/NS/Gain) from the configuration file */
     printf("Initializing audio processing...\n");

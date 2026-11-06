@@ -7,10 +7,15 @@
 #
 #   pkg-config --define-variable=prefix=/path/to/the/dir/containing/this/file --cflags sherpa-onnx
 
-prefix="/Users/yuner84/workspace/NvoiceSdk/third_party/sherpa-onnx/static"
-exec_prefix="${prefix}"
-includedir="${prefix}/include"
-libdir="${exec_prefix}/lib"
+# Use pkg-config's built-in ${pc_path} or determine prefix from this file's location
+# For portability, we calculate prefix relative to this file's directory
+# The directory structure is: <repo>/third_party/sherpa-onnx/static/
+# So prefix should point to the 'static' directory itself
+
+prefix=${pcfiledir}
+exec_prefix=${prefix}
+includedir=${prefix}/include
+libdir=${exec_prefix}/lib
 
 Name: sherpa-onnx
 Description: pkg-config for sherpa-onnx

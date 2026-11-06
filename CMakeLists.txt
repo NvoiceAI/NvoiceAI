@@ -19,12 +19,11 @@ set(SDK_INCLUDE_DIR "${SDK_ROOT}/include")
 set(SDK_SRC_DIR "${SDK_ROOT}/src")
 set(SDK_LIB_DIR "${SDK_ROOT}/lib")
 set(UTILITIES_DIR "${SDK_ROOT}/utilities")
-set(WEBRTC_APM_LIB_DIR "${SDK_ROOT}/webrtc_apm_lib")
 set(SHERPA_ONNX_LOCAL_ROOT "${SDK_ROOT}/third_party/sherpa-onnx/static")
 
 find_library(WEBRTC_APM_LIB
-    NAMES webrtc-apm
-    PATHS "${WEBRTC_APM_LIB_DIR}"
+    NAMES webrtc-audio-processing-2.1
+    PATHS "${SDK_LIB_DIR}"
     NO_DEFAULT_PATH
     REQUIRED
 )

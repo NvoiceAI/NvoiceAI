@@ -1,5 +1,6 @@
 *.bak
 *.wav
+.DS_Store
 third_party/sherpa-onnx/models/
 .vscode/
 output/

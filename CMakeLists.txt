@@ -11,24 +11,45 @@ if(APPLE)
     list(PREPEND CMAKE_PREFIX_PATH "/opt/homebrew")
 endif()
 
-# Find spdlog (required by libnvoiceai_sdk.a which includes production logging)
+# Find spdlog (required by SDK which includes production logging)
 find_package(spdlog REQUIRED CONFIG)
 
 set(SDK_ROOT "${CMAKE_CURRENT_SOURCE_DIR}")
 set(SDK_INCLUDE_DIR "${SDK_ROOT}/include")
 set(SDK_SRC_DIR "${SDK_ROOT}/src")
-set(SDK_LIB_DIR "${SDK_ROOT}/lib")
+
+# Set SDK_LIB_DIR based on platform (must be resolved at configuration time for find_library)
+if(WIN32)
+    set(SDK_LIB_DIR "${SDK_ROOT}/lib/win")
+elseif(APPLE)
+    set(SDK_LIB_DIR "${SDK_ROOT}/lib/mac")
+else()
+    set(SDK_LIB_DIR "${SDK_ROOT}/lib")
+endif()
+
 set(UTILITIES_DIR "${SDK_ROOT}/utilities")
 set(SHERPA_ONNX_LOCAL_ROOT "${SDK_ROOT}/third_party/sherpa-onnx/static")
 
-find_library(WEBRTC_APM_LIB
-    NAMES webrtc-audio-processing-2.1
-    PATHS "${SDK_LIB_DIR}"
-    NO_DEFAULT_PATH
-    REQUIRED
-)
-
-message(STATUS "Found WebRTC APM library: ${WEBRTC_APM_LIB}")
+if(APPLE)
+    find_library(WEBRTC_APM_LIB
+        NAMES webrtc-audio-processing-2.1
+        PATHS "${SDK_LIB_DIR}"
+        NO_DEFAULT_PATH
+        REQUIRED
+    )
+    set(WEBRTC_APM_LINK_TARGETS "${WEBRTC_APM_LIB}")
+    message(STATUS "Found WebRTC APM library (macOS): ${WEBRTC_APM_LIB}")
+else()
+    # On Windows, link against the webrtc-audio-processing library
+    find_library(WEBRTC_APM_LIB 
+        NAMES webrtc-audio-processing-2-1
+        PATHS "${SDK_LIB_DIR}"
+        NO_DEFAULT_PATH
+        REQUIRED
+    )
+    set(WEBRTC_APM_LINK_TARGETS "${WEBRTC_APM_LIB}")
+    message(STATUS "Found WebRTC Audio Processing (Windows): ${WEBRTC_APM_LIB}")
+endif()
 
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(PORTAUDIO REQUIRED portaudio-2.0)
@@ -50,8 +71,8 @@ target_include_directories(nvoiceai_realtime_simple PRIVATE
 )
 
 target_link_libraries(nvoiceai_realtime_simple PRIVATE
-    "${SDK_LIB_DIR}/libnvoiceai_sdk.a"
-    ${WEBRTC_APM_LIB}
+    ${SDK_LIB_DIR}/$<IF:$<PLATFORM_ID:Windows>,nvoiceai_sdk.lib,libnvoiceai_sdk.a>
+    ${WEBRTC_APM_LINK_TARGETS}
     ${PORTAUDIO_LIBRARIES}
     ${SNDFILE_LIBRARIES}
     spdlog::spdlog
@@ -79,8 +100,8 @@ target_include_directories(nvoiceai_realtime_simple_c PRIVATE
 )
 
 target_link_libraries(nvoiceai_realtime_simple_c PRIVATE
-    "${SDK_LIB_DIR}/libnvoiceai_sdk.a"
-    ${WEBRTC_APM_LIB}
+    ${SDK_LIB_DIR}/$<IF:$<PLATFORM_ID:Windows>,nvoiceai_sdk.lib,libnvoiceai_sdk.a>
+    ${WEBRTC_APM_LINK_TARGETS}
     ${PORTAUDIO_LIBRARIES}
     ${SNDFILE_LIBRARIES}
     c++
@@ -108,8 +129,8 @@ target_include_directories(offline_audio_processor PRIVATE
 )
 
 target_link_libraries(offline_audio_processor PRIVATE
-    "${SDK_LIB_DIR}/libnvoiceai_sdk.a"
-    ${WEBRTC_APM_LIB}
+    ${SDK_LIB_DIR}/$<IF:$<PLATFORM_ID:Windows>,nvoiceai_sdk.lib,libnvoiceai_sdk.a>
+    ${WEBRTC_APM_LINK_TARGETS}
     ${PORTAUDIO_LIBRARIES}
     ${SNDFILE_LIBRARIES}
     spdlog::spdlog
@@ -156,8 +177,8 @@ if(SHERPA_ONNX_FOUND)
     
     # Link against static library for real-time audio with PortAudio
     target_link_libraries(nvoiceai_realtime_sherpa_asr PRIVATE
-        "${SDK_LIB_DIR}/libnvoiceai_sdk.a"
-        ${WEBRTC_APM_LIB}
+        ${SDK_LIB_DIR}/$<IF:$<PLATFORM_ID:Windows>,nvoiceai_sdk.lib,libnvoiceai_sdk.a>
+        ${WEBRTC_APM_LINK_TARGETS}
         ${PORTAUDIO_LIBRARIES}
         ${SHERPA_ONNX_LIBRARIES}
         spdlog::spdlog
@@ -190,8 +211,8 @@ if(SHERPA_ONNX_FOUND)
     
     # Link against static library for real-time audio with PortAudio
     target_link_libraries(nvoiceai_realtime_sherpa_asr_c PRIVATE
-        "${SDK_LIB_DIR}/libnvoiceai_sdk.a"
-        ${WEBRTC_APM_LIB}
+        ${SDK_LIB_DIR}/$<IF:$<PLATFORM_ID:Windows>,nvoiceai_sdk.lib,libnvoiceai_sdk.a>
+        ${WEBRTC_APM_LINK_TARGETS}
         ${PORTAUDIO_LIBRARIES}
         ${SHERPA_ONNX_LIBRARIES}
         spdlog::spdlog
@@ -232,9 +253,9 @@ if(EXISTS "${CACTUS_NEEDLE_ROOT}/needle.h" AND EXISTS "${CACTUS_NEEDLE_ROOT}/lib
     )
 
     target_link_libraries(nvoiceai_realtime_cactus_needle_asr PRIVATE
-        "${SDK_LIB_DIR}/libnvoiceai_sdk.a"
+        ${SDK_LIB_DIR}/$<IF:$<PLATFORM_ID:Windows>,nvoiceai_sdk.lib,libnvoiceai_sdk.a>
         "${CACTUS_NEEDLE_ROOT}/libneedle.a"
-        ${WEBRTC_APM_LIB}
+        ${WEBRTC_APM_LINK_TARGETS}
         ${PORTAUDIO_LIBRARIES}
         c++
         spdlog::spdlog
@@ -264,9 +285,9 @@ if(EXISTS "${CACTUS_NEEDLE_ROOT}/needle.h" AND EXISTS "${CACTUS_NEEDLE_ROOT}/lib
     )
 
     target_link_libraries(nvoiceai_realtime_cactus_needle_asr_fullduplex PRIVATE
-        "${SDK_LIB_DIR}/libnvoiceai_sdk.a"
+        ${SDK_LIB_DIR}/$<IF:$<PLATFORM_ID:Windows>,nvoiceai_sdk.lib,libnvoiceai_sdk.a>
         "${CACTUS_NEEDLE_ROOT}/libneedle.a"
-        ${WEBRTC_APM_LIB}
+        ${WEBRTC_APM_LINK_TARGETS}
         ${PORTAUDIO_LIBRARIES}
         pthread
         c++

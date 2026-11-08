@@ -4,7 +4,7 @@ The NvoiceAI SDK is a real-time, full-duplex audio processing solution designed 
 
 Designed as a dedicated audio front end for voice applications, the SDK offers a simple, developer-friendly API that makes integration straightforward. With just a few lines of C/C++ code, you can bring robust, real-time audio processing into your application.
 
-The SDK currently supports macOS on both Intel and Apple Silicon, with support for Windows, Linux, and Android planned for future releases. Beyond desktop applications, as demonstrated in this project, the SDK’s modular architecture makes it easy to extend to a wide range of use cases, including mobile devices, wearables, automotive systems, and robotics. 
+The SDK fully supports both macOS and Windows, with support for Linux and Android planned for future releases. Beyond desktop applications, as demonstrated in this project, the SDK’s modular architecture makes it easy to extend to a wide range of use cases, including mobile devices, wearables, automotive systems, and robotics. 
 
 ## Key Features
 
@@ -60,6 +60,11 @@ The parameters that confgures the library-provided or built-in audio processing 
     "enabled": true,
     "level": 2,
     "description": "[Built-in] Noise suppression. level: 1=low, 2=moderate, 3=high, 4=veryhigh"
+  },
+  "rnnoise": {
+    "enabled": true,
+    "blend_factor": 0.8,
+    "description": "blend_factor: 0.0 = no denoising (preserves all input), 1.0 = full RNNoise (aggressive denoising). Recommended: 0.7-0.9 for better speech preservation"
   },
   "gain_control": {
     "agc1_enabled": true,
@@ -173,19 +178,40 @@ Similarly, the streaming speech recognition demo based on the Cactus **needle** 
 - macOS 10.15 or later
 - Intel or Apple Silicon (arm64)
 
-**Build Dependencies:**
+**macOS Build Dependencies:**
 ```bash
 # Install via Homebrew
 brew install cmake pkg-config libsndfile portaudio blackhole-2ch 
 ```
 
+**Windows System Requirements:**
+- Windows 10 or later (x86-64 or ARM64)
+- Visual Studio 2019 or later with C++ support
+- CMake 3.20 or later
+
+**Windows Build Dependencies:**
+```powershell
+# Install via vcpkg or download pre-built binaries
+# Using vcpkg:
+vcpkg install cmake:x64-windows pkg-config:x64-windows libsndfile:x64-windows portaudio:x64-windows
+
+# Or install using Chocolatey:
+choco install cmake pkgconfiglite libsndfile portaudio
+```
+
 ### Building the SDK Examples
 
-1. **How to build:**
+**macOS:**
 ```bash
 cd /path/to/NvoiceSdk
 chmod +x build.sh
 ./build.sh
+```
+
+**Windows:**
+```powershell
+cd \path\to\NvoiceSdk
+.\build.ps1
 ```
 
 The build produces 6 executables:

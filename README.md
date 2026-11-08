@@ -189,6 +189,12 @@ brew install cmake pkg-config libsndfile portaudio blackhole-2ch
 - Visual Studio 2019 or later with C++ support
 - CMake 3.20 or later
 
+**Windows Audio Configuration:**
+
+Install VB-Audio Virtual Cable (https://vb-audio.com/Cable/index.htm free)
+Set it as the system playback device (In Sound settings, specify CABLE In for output and CABLE Output for input)
+The SDK audio stack will capture system audio through the virtual cable
+
 **Windows Build Dependencies:**
 ```powershell
 # Install via vcpkg or download pre-built binaries
@@ -236,6 +242,7 @@ Every realtime example takes a single optional argument: the path to the configu
   ./build/nvoiceai_realtime_cactus_needle_asr [configs/config_cactus_needle.json]
   ./build/offline_audio_processor mic.wav playback.wav output.wav [configs/config.json]
 ```
+Note: for Windows, example runs sucessfully only with the DLLs runtime libraries presented. All the necessary DLLs are stored in the same folder with the executables, e.g. ./build/Release
 
 The examples:
 - Load configuration from the given JSON file (or their default under `configs/`), including the appended `[capture postprocessing]` blocks

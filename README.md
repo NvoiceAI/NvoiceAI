@@ -195,16 +195,6 @@ Install VB-Audio Virtual Cable (https://vb-audio.com/Cable/index.htm free)
 Set it as the system playback device (In Sound settings, specify CABLE In for output and CABLE Output for input)
 The SDK audio stack will capture system audio through the virtual cable
 
-**Windows Build Dependencies:**
-```powershell
-# Install via vcpkg or download pre-built binaries
-# Using vcpkg:
-vcpkg install cmake:x64-windows pkg-config:x64-windows libsndfile:x64-windows portaudio:x64-windows
-
-# Or install using Chocolatey:
-choco install cmake pkgconfiglite libsndfile portaudio
-```
-
 ### Building the SDK Examples
 
 **macOS:**
@@ -217,16 +207,19 @@ chmod +x build.sh
 **Windows:**
 ```powershell
 cd \path\to\NvoiceSdk
-.\build.ps1
+# install vcpkg to install the required dependences
+.\install-vcpkg.ps1 -VcpkgDir C:\path\to\vcpkg
+# build with vcpkg path
+.\build.ps1 -VcpkgDir C:\path\to\vcpkg -Clear
 ```
 
-The build produces 6 executables:
-- `nvoiceai_realtime_simple` - C++ version of the example that saves the audio files
-- `nvoiceai_realtime_simple_c` - C API version of the example that saves the audio files
-- `nvoiceai_realtime_sherpa_asr` - C++ version of the example with speech recognition
-- `nvoiceai_realtime_sherpa_asr_c` - C API version of the example with speech recognition
-- `nvoiceai_realtime_cactus_needle_asr` - C API version of the example with Cactus needle streaming speech recognition
-- `offline_audio_processor` - Batch processing tool for recorded audio files
+The build produces up to 6 executables depending on the platforms:
+- `nvoiceai_realtime_simple` - C++ version of the example that saves the audio files [macOS/Windows]
+- `nvoiceai_realtime_simple_c` - C API version of the example that saves the audio files [macOS]
+- `nvoiceai_realtime_sherpa_asr` - C++ version of the example with speech recognition [macOS]
+- `nvoiceai_realtime_sherpa_asr_c` - C API version of the example with speech recognition [macOS]
+- `nvoiceai_realtime_cactus_needle_asr` - C API version of the example with Cactus needle streaming speech recognition [macOS]
+- `offline_audio_processor` - Batch processing tool for recorded audio files [macOS/Windows]
 
 Note: `nvoiceai_realtime_sherpa_asr*` is only built when sherpa-onnx is found under `third_party/`, and `nvoiceai_realtime_cactus_needle_asr` is only built when `third_party/cactus-needle/macos-arm64` (containing `needle.h` and `libneedle.a`) is present.
 

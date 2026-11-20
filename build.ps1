@@ -7,6 +7,7 @@
 
 param(
     [string]$BuildType = "Release",
+    [string]$VcpkgDir = "",
     [switch]$Clean = $false,
     [switch]$Help
 )
@@ -15,18 +16,22 @@ if ($Help) {
     Write-Host "NvoiceAI Build Script for Windows" -ForegroundColor Cyan
     Write-Host ""
     Write-Host "Usage:" -ForegroundColor Yellow
-    Write-Host "  .\.\build.ps1                      # Incremental build (fast, reuses previous build)" -ForegroundColor White
-    Write-Host "  .\.\build.ps1 -Clean               # Clean build (removes all artifacts and rebuilds)" -ForegroundColor White
-    Write-Host "  .\.\build.ps1 -BuildType Debug     # Build in Debug mode" -ForegroundColor White
-    Write-Host "  .\.\build.ps1 -Help                # Show this help message" -ForegroundColor White
+    Write-Host "  .\.\build.ps1 -VcpkgDir C:\path\to\vcpkg                # Incremental build (fast)" -ForegroundColor White
+    Write-Host "  .\.\build.ps1 -VcpkgDir C:\path\to\vcpkg -Clean         # Clean build (full rebuild)" -ForegroundColor White
+    Write-Host "  .\.\build.ps1 -VcpkgDir C:\path\to\vcpkg -BuildType Debug # Build in Debug mode" -ForegroundColor White
+    Write-Host "  .\.\build.ps1 -Help                                      # Show this help message" -ForegroundColor White
     Write-Host ""
     Write-Host "Build Modes:" -ForegroundColor Yellow
     Write-Host "  (default)     Incremental build - only rebuilds changed files (fast)" -ForegroundColor White
     Write-Host "  -Clean        Clean build - removes build directory and rebuilds everything (slow)" -ForegroundColor White
     Write-Host ""
+    Write-Host "Parameters:" -ForegroundColor Yellow
+    Write-Host "  -VcpkgDir <path>   Specify vcpkg root directory (required)" -ForegroundColor White
+    Write-Host "  -BuildType <type>   Build type: Release (default) or Debug" -ForegroundColor White
+    Write-Host ""
     Write-Host "Environment Setup:" -ForegroundColor Yellow
     Write-Host "  - Requires CMake to be installed" -ForegroundColor White
-    Write-Host "  - Uses vcpkg toolchain from: C:\\Users\\zheng\\workspace\\vcpkg" -ForegroundColor White
+    Write-Host "  - Requires -VcpkgDir parameter pointing to vcpkg installation" -ForegroundColor White
     Write-Host "  - Copies libraries to build output directory for runtime" -ForegroundColor White
     exit 0
 }
@@ -34,9 +39,29 @@ if ($Help) {
 # Define paths
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $BuildDir = Join-Path $ScriptDir "build"
-$VcpkgRoot = "C:\Users\zheng\workspace\vcpkg"
-$VcpkgToolchain = Join-Path $VcpkgRoot "scripts\buildsystems\vcpkg.cmake"
-$PkgConfigExe = Join-Path $VcpkgRoot "installed\x64-windows\tools\pkgconf\pkgconf.exe"
+
+# ==================== Validate vcpkg Root ====================
+
+if (-not $VcpkgDir -or $VcpkgDir -eq "") {
+    Write-Host "ERROR: vcpkg root path must be specified via -VcpkgDir parameter" -ForegroundColor Red
+    Write-Host ""
+    Write-Host "Usage: .\build.ps1 -VcpkgDir C:\path\to\vcpkg" -ForegroundColor Yellow
+    exit 1
+}
+
+if (-not (Test-Path $VcpkgDir)) {
+    Write-Host "ERROR: vcpkg root path not found: $VcpkgDir" -ForegroundColor Red
+    exit 1
+}
+
+$VcpkgExe = Join-Path $VcpkgDir "vcpkg.exe"
+if (-not (Test-Path $VcpkgExe)) {
+    Write-Host "ERROR: vcpkg.exe not found at: $VcpkgExe" -ForegroundColor Red
+    exit 1
+}
+
+$VcpkgToolchain = Join-Path $VcpkgDir "scripts\buildsystems\vcpkg.cmake"
+$PkgConfigExe = Join-Path $VcpkgDir "installed\x64-windows\tools\pkgconf\pkgconf.exe"
 
 Write-Host "==========================================" -ForegroundColor Cyan
 Write-Host "NvoiceAI SDK - Windows Build Script" -ForegroundColor Cyan
@@ -46,6 +71,7 @@ Write-Host ""
 Write-Host "Build Configuration:" -ForegroundColor Blue
 Write-Host "  Build Type: $BuildType" -ForegroundColor White
 Write-Host "  Build Mode: $(if ($Clean) { 'Clean (full rebuild)' } else { 'Incremental (fast)' })" -ForegroundColor White
+Write-Host "  vcpkg Root: $VcpkgDir" -ForegroundColor White
 Write-Host ""
 # Validate dependencies
 Write-Host "Checking dependencies..." -ForegroundColor Blue
@@ -60,14 +86,38 @@ if (-not (Test-Path $VcpkgToolchain)) {
     exit 1
 }
 
-if (-not (Test-Path $PkgConfigExe)) {
-    Write-Host "ERROR: pkgconf not found at $PkgConfigExe" -ForegroundColor Red
-    exit 1
-}
-
 Write-Host "  CMake found" -ForegroundColor Green
 Write-Host "  vcpkg toolchain found" -ForegroundColor Green
-Write-Host "  pkgconf found" -ForegroundColor Green
+Write-Host ""
+
+# ==================== vcpkg Package Management ====================
+
+Write-Host "Checking vcpkg packages..." -ForegroundColor Blue
+
+$RequiredPackages = @("pkgconf", "spdlog", "portaudio", "libsndfile", "abseil")
+
+# Get list of installed packages
+$InstalledPackages = & $VcpkgExe list 2>&1
+
+foreach ($package in $RequiredPackages) {
+    $IsInstalled = $InstalledPackages | Where-Object { $_ -match "^$package\s" }
+    
+    if ($IsInstalled) {
+        Write-Host "  $package : Found" -ForegroundColor Green
+    }
+    else {
+        Write-Host "  $package : MISSING - Installing..." -ForegroundColor Yellow
+        & $VcpkgExe install "$package`:x64-windows"
+        
+        if ($LASTEXITCODE -ne 0) {
+            Write-Host "ERROR: Failed to install $package. vcpkg exited with code $LASTEXITCODE" -ForegroundColor Red
+            Write-Host "This may be a temporary network issue. Try running the script again." -ForegroundColor Yellow
+            exit 1
+        }
+        Write-Host "  $package : Installed successfully" -ForegroundColor Green
+    }
+}
+
 Write-Host ""
 
 # Clean build directory
@@ -100,7 +150,13 @@ Write-Host "Configuring CMake..." -ForegroundColor Blue
 Push-Location $BuildDir
 
 try {
-    & cmake .. -DCMAKE_TOOLCHAIN_FILE="$VcpkgToolchain" -DPKG_CONFIG_EXECUTABLE="$PkgConfigExe"
+    $CmakeArgs = @(
+        "..",
+        "-DCMAKE_TOOLCHAIN_FILE=`"$VcpkgToolchain`"",
+        "-DPKG_CONFIG_EXECUTABLE=`"$PkgConfigExe`""
+    )
+    
+    & cmake @CmakeArgs
 
     if ($LASTEXITCODE -ne 0) {
         Write-Host "CMake configuration failed!" -ForegroundColor Red
@@ -164,6 +220,7 @@ if ($ExeFiles.Count -gt 0) {
     foreach ($dll in $AllDlls) {
         $destPath = Join-Path $ExeDir $dll.Name
         Copy-Item -Path $dll.FullName -Destination $destPath -Force
+        Write-Host "    Copied $($dll.Name) to $ExeDir" -ForegroundColor Gray
     }
     
     if ($AllDlls.Count -gt 0) {

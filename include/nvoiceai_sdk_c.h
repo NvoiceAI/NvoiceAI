@@ -42,13 +42,30 @@ void nvoiceai_sdk_get_audio_config(nvoiceai_handle_t h, int* sampleRate, int* ch
 void nvoiceai_sdk_set_aec_enabled(nvoiceai_handle_t h, int enabled);
 int nvoiceai_sdk_is_aec_enabled(nvoiceai_handle_t h);
 
+// Runtime NS control: Enable/disable noise suppression during active call.
+// This allows UI to toggle NS on/off without restarting audio processing.
+void nvoiceai_sdk_set_ns_enabled(nvoiceai_handle_t h, int enabled);
+int nvoiceai_sdk_is_ns_enabled(nvoiceai_handle_t h);
+
+// Runtime NS level control (1=kLow, 2=kModerate, 3=kHigh, 4=kVeryHigh).
+// Allows UI to adjust suppression aggressiveness during active call.
+// Level is clamped to [1, 4]. Only applies if NS is enabled.
+void nvoiceai_sdk_set_ns_level(nvoiceai_handle_t h, int level);
+int nvoiceai_sdk_get_ns_level(nvoiceai_handle_t h);
+
+// Runtime RNNoise enable/disable control.
+// This allows UI to toggle RNNoise on/off without restarting audio processing.
+void nvoiceai_sdk_set_rnn_enabled(nvoiceai_handle_t h, int enabled);
+int nvoiceai_sdk_is_rnn_enabled(nvoiceai_handle_t h);
+
+// Runtime RNNoise blend factor control (0.0 to 1.0).
+// 1.0 = fully processed (RNNoise output), 0.0 = fully original (bypass).
+void nvoiceai_sdk_set_rnnoise_blend_factor(nvoiceai_handle_t h, float factor);
+float nvoiceai_sdk_get_rnnoise_blend_factor(nvoiceai_handle_t h);
+
 // Control system playback gain from C API (1.0 = unity)
 void nvoiceai_sdk_set_system_gain(nvoiceai_handle_t h, float gain);
 float nvoiceai_sdk_get_system_gain(nvoiceai_handle_t h);
-
-// Enable audio file saving for audio debugging
-// Specify the directory to store the output files (e.g., "./output")
-int nvoiceai_sdk_enable_audio_file_saving(nvoiceai_handle_t h, const char* output_dir);
 
 #ifdef __cplusplus
 }

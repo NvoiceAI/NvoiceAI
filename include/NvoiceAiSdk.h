@@ -34,6 +34,27 @@ public:
     void setAecEnabled(bool enabled);
     bool isAecEnabled() const;
 
+    // Runtime NS control: Enable/disable noise suppression during active call.
+    // This allows UI to toggle NS on/off without restarting audio processing.
+    void setNsEnabled(bool enabled);
+    bool isNsEnabled() const;
+
+    // Runtime NS level control (1=kLow, 2=kModerate, 3=kHigh, 4=kVeryHigh).
+    // Allows UI to adjust suppression aggressiveness during active call.
+    // Level is clamped to [1, 4]. Only applies if NS is enabled.
+    void setNsLevel(int level);
+    int getNsLevel() const;
+
+    // Runtime RNNoise enable/disable control.
+    // This allows UI to toggle RNNoise on/off without restarting audio processing.
+    void setRNNoiseEnabled(bool enabled);
+    bool isRNNoiseEnabled() const;
+
+    // Runtime RNNoise blend factor control (0.0 to 1.0).
+    // 1.0 = fully processed (RNNoise output), 0.0 = fully original (bypass).
+    void setRNNoiseBlendFactor(float factor);
+    float getRNNoiseBlendFactor() const;
+
     int sampleRate() const;
     int channels() const;
     int frameSize() const;
@@ -41,10 +62,6 @@ public:
     // Control system playback gain from C API (1.0 = unity)
     void setSystemGain(float gain);
     float getSystemGain() const;
-
-    // Enable audio file saving for audio debugging
-    // Specify the directory to store the output files (e.g., "./output")
-    bool enableSaveAudioFiles(const std::string& output_dir);
 
 private:
     struct Impl;

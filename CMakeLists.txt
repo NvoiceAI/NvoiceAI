@@ -142,89 +142,116 @@ target_link_directories(offline_audio_processor PRIVATE
     ${SNDFILE_LIBRARY_DIRS}
 )
 
-# Real-time example with Sherpa ONNX speech recognition (enabled by default)
-message(STATUS "Building with sherpa-onnx integration enabled")
-
-# Set up pkg-config path for local sherpa-onnx
-list(APPEND CMAKE_PREFIX_PATH "${SHERPA_ONNX_LOCAL_ROOT}")
-set(ENV{PKG_CONFIG_PATH} "${SHERPA_ONNX_LOCAL_ROOT}:$ENV{PKG_CONFIG_PATH}")
-
-# Find sherpa-onnx using pkg-config
-pkg_check_modules(SHERPA_ONNX sherpa-onnx)
-
-if(SHERPA_ONNX_FOUND)
-    message(STATUS "Found sherpa-onnx at ${SHERPA_ONNX_PREFIX}")
+# Real-time example with Sherpa ONNX speech recognition (always enabled when dependencies available)
+if(WIN32)
+    # Windows: Use the downloaded shared library build
+    set(SHERPA_ONNX_WIN_LIB_DIR "${SDK_ROOT}/third_party/sherpa-onnx-v2.0.1-win-x64-shared-MD-Release-lib/sherpa-onnx-v2.0.1-win-x64-shared-MD-Release-lib/lib")
+    set(SHERPA_ONNX_INCLUDE_DIR "${SDK_ROOT}/third_party/sherpa-onnx/static/include")
     
-    # Build C++ Sherpa ASR example
-    add_executable(nvoiceai_realtime_sherpa_asr 
-        examples/nvoiceai_realtime_sherpa_asr.cpp
-        ${SDK_SRC_DIR}/SherpaOnnxManager.cpp
-        ${UTILITIES_DIR}/ConfigLoader.cpp
-    )
+    # Verify directories exist
+    if(NOT EXISTS "${SHERPA_ONNX_WIN_LIB_DIR}")
+        message(FATAL_ERROR "sherpa-onnx library directory not found: ${SHERPA_ONNX_WIN_LIB_DIR}")
+    endif()
+    if(NOT EXISTS "${SHERPA_ONNX_INCLUDE_DIR}")
+        message(FATAL_ERROR "sherpa-onnx include directory not found: ${SHERPA_ONNX_INCLUDE_DIR}")
+    endif()
     
-    target_include_directories(nvoiceai_realtime_sherpa_asr PRIVATE
-        ${SDK_INCLUDE_DIR}
-        ${UTILITIES_DIR}
-        ${PORTAUDIO_INCLUDE_DIRS}
-        ${SHERPA_ONNX_INCLUDE_DIRS}
-    )
+    # Manually discover libraries
+    find_library(SHERPA_ONNX_C_API_LIB NAMES sherpa-onnx-c-api PATHS "${SHERPA_ONNX_WIN_LIB_DIR}" NO_DEFAULT_PATH)
+    find_library(SHERPA_ONNX_CXX_API_LIB NAMES sherpa-onnx-cxx-api PATHS "${SHERPA_ONNX_WIN_LIB_DIR}" NO_DEFAULT_PATH)
+    find_library(ONNXRUNTIME_LIB NAMES onnxruntime PATHS "${SHERPA_ONNX_WIN_LIB_DIR}" NO_DEFAULT_PATH)
     
-    target_link_directories(nvoiceai_realtime_sherpa_asr PRIVATE
-        ${SDK_LIB_DIR}
-        ${PORTAUDIO_LIBRARY_DIRS}
-        ${SHERPA_ONNX_LIBRARY_DIRS}
-    )
+    if(NOT SHERPA_ONNX_C_API_LIB)
+        message(FATAL_ERROR "Could not find sherpa-onnx-c-api.lib in ${SHERPA_ONNX_WIN_LIB_DIR}")
+    endif()
+    if(NOT SHERPA_ONNX_CXX_API_LIB)
+        message(FATAL_ERROR "Could not find sherpa-onnx-cxx-api.lib in ${SHERPA_ONNX_WIN_LIB_DIR}")
+    endif()
+    if(NOT ONNXRUNTIME_LIB)
+        message(FATAL_ERROR "Could not find onnxruntime.lib in ${SHERPA_ONNX_WIN_LIB_DIR}")
+    endif()
     
-    # Link against static library for real-time audio with PortAudio
-    target_link_libraries(nvoiceai_realtime_sherpa_asr PRIVATE
-        ${SDK_LIB_DIR}/$<IF:$<PLATFORM_ID:Windows>,nvoiceai_sdk.lib,libnvoiceai_sdk.a>
-        ${WEBRTC_APM_LINK_TARGETS}
-        ${PORTAUDIO_LIBRARIES}
-        ${SHERPA_ONNX_LIBRARIES}
-        spdlog::spdlog
-    )
+    set(SHERPA_ONNX_LIBRARIES "${SHERPA_ONNX_C_API_LIB}" "${SHERPA_ONNX_CXX_API_LIB}" "${ONNXRUNTIME_LIB}")
+    set(SHERPA_ONNX_INCLUDE_DIRS "${SHERPA_ONNX_INCLUDE_DIR}")
+    set(SHERPA_ONNX_LIBRARY_DIRS "${SHERPA_ONNX_WIN_LIB_DIR}")
     
-    message(STATUS "Configured nvoiceai_realtime_sherpa_asr (C++) with speech recognition")
-    
-    # Build C Sherpa ASR example (uses C++ internally via SherpaOnnxManager)
-    add_executable(nvoiceai_realtime_sherpa_asr_c
-        examples/nvoiceai_realtime_sherpa_asr.c
-        ${UTILITIES_DIR}/config_loader.c
-        ${SDK_SRC_DIR}/SherpaOnnxManager.cpp
-    )
-    
-    # Compile as C++ even though the main source is .c to allow calling C++ helper functions
-    set_source_files_properties(examples/nvoiceai_realtime_sherpa_asr.c PROPERTIES LANGUAGE CXX)
-    
-    target_include_directories(nvoiceai_realtime_sherpa_asr_c PRIVATE
-        ${UTILITIES_DIR}
-        ${SDK_INCLUDE_DIR}
-        ${PORTAUDIO_INCLUDE_DIRS}
-        ${SHERPA_ONNX_INCLUDE_DIRS}
-    )
-    
-    target_link_directories(nvoiceai_realtime_sherpa_asr_c PRIVATE
-        ${SDK_LIB_DIR}
-        ${PORTAUDIO_LIBRARY_DIRS}
-        ${SHERPA_ONNX_LIBRARY_DIRS}
-    )
-    
-    # Link against static library for real-time audio with PortAudio
-    target_link_libraries(nvoiceai_realtime_sherpa_asr_c PRIVATE
-        ${SDK_LIB_DIR}/$<IF:$<PLATFORM_ID:Windows>,nvoiceai_sdk.lib,libnvoiceai_sdk.a>
-        ${WEBRTC_APM_LINK_TARGETS}
-        ${PORTAUDIO_LIBRARIES}
-        ${SHERPA_ONNX_LIBRARIES}
-        spdlog::spdlog
-    )
-    
-    message(STATUS "Configured nvoiceai_realtime_sherpa_asr_c (C-style API) with speech recognition")
+    message(STATUS "Found sherpa-onnx at ${SHERPA_ONNX_WIN_LIB_DIR}")
 else()
-    message(WARNING "sherpa-onnx NOT found")
-    message(WARNING "  Expected at: ${SHERPA_ONNX_LOCAL_ROOT}")
-    message(WARNING "  Make sure third_party/sherpa-onnx is properly built")
-    message(WARNING "  Skipping nvoiceai_realtime_sherpa_asr targets")
+    # macOS/Linux: Use pkg-config to find sherpa-onnx
+    list(APPEND CMAKE_PREFIX_PATH "${SHERPA_ONNX_LOCAL_ROOT}")
+    set(ENV{PKG_CONFIG_PATH} "${SHERPA_ONNX_LOCAL_ROOT}:$ENV{PKG_CONFIG_PATH}")
+    
+    pkg_check_modules(SHERPA_ONNX sherpa-onnx)
+    
+    if(NOT SHERPA_ONNX_FOUND)
+        message(FATAL_ERROR "sherpa-onnx NOT found. Expected at: ${SHERPA_ONNX_LOCAL_ROOT}")
+    endif()
+    
+    message(STATUS "Found sherpa-onnx at ${SHERPA_ONNX_PREFIX}")
 endif()
+
+# Build C++ Sherpa ASR example
+add_executable(nvoiceai_realtime_sherpa_asr 
+    examples/nvoiceai_realtime_sherpa_asr.cpp
+    ${SDK_SRC_DIR}/SherpaOnnxManager.cpp
+    ${UTILITIES_DIR}/ConfigLoader.cpp
+)
+
+target_include_directories(nvoiceai_realtime_sherpa_asr PRIVATE
+    ${SDK_INCLUDE_DIR}
+    ${UTILITIES_DIR}
+    ${PORTAUDIO_INCLUDE_DIRS}
+    ${SHERPA_ONNX_INCLUDE_DIRS}
+)
+
+target_link_directories(nvoiceai_realtime_sherpa_asr PRIVATE
+    ${SDK_LIB_DIR}
+    ${PORTAUDIO_LIBRARY_DIRS}
+    ${SHERPA_ONNX_LIBRARY_DIRS}
+)
+
+target_link_libraries(nvoiceai_realtime_sherpa_asr PRIVATE
+    ${SDK_LIB_DIR}/$<IF:$<PLATFORM_ID:Windows>,nvoiceai_sdk.lib,libnvoiceai_sdk.a>
+    ${WEBRTC_APM_LINK_TARGETS}
+    ${PORTAUDIO_LIBRARIES}
+    ${SHERPA_ONNX_LIBRARIES}
+    spdlog::spdlog
+)
+
+message(STATUS "Configured nvoiceai_realtime_sherpa_asr (C++) with speech recognition")
+
+# Build C Sherpa ASR example (uses C++ internally via SherpaOnnxManager)
+add_executable(nvoiceai_realtime_sherpa_asr_c
+    examples/nvoiceai_realtime_sherpa_asr.c
+    ${UTILITIES_DIR}/config_loader.c
+    ${SDK_SRC_DIR}/SherpaOnnxManager.cpp
+)
+
+# Compile as C++ even though the main source is .c to allow calling C++ helper functions
+set_source_files_properties(examples/nvoiceai_realtime_sherpa_asr.c PROPERTIES LANGUAGE CXX)
+
+target_include_directories(nvoiceai_realtime_sherpa_asr_c PRIVATE
+    ${UTILITIES_DIR}
+    ${SDK_INCLUDE_DIR}
+    ${PORTAUDIO_INCLUDE_DIRS}
+    ${SHERPA_ONNX_INCLUDE_DIRS}
+)
+
+target_link_directories(nvoiceai_realtime_sherpa_asr_c PRIVATE
+    ${SDK_LIB_DIR}
+    ${PORTAUDIO_LIBRARY_DIRS}
+    ${SHERPA_ONNX_LIBRARY_DIRS}
+)
+
+target_link_libraries(nvoiceai_realtime_sherpa_asr_c PRIVATE
+    ${SDK_LIB_DIR}/$<IF:$<PLATFORM_ID:Windows>,nvoiceai_sdk.lib,libnvoiceai_sdk.a>
+    ${WEBRTC_APM_LINK_TARGETS}
+    ${PORTAUDIO_LIBRARIES}
+    ${SHERPA_ONNX_LIBRARIES}
+    spdlog::spdlog
+)
+
+message(STATUS "Configured nvoiceai_realtime_sherpa_asr_c (C-style API) with speech recognition")
 
 # Real-time example with Cactus "needle" streaming speech recognition
 # cactus-needle is vendored under third_party/
@@ -305,10 +332,8 @@ message(STATUS "Configured targets:")
 message(STATUS "  - nvoiceai_realtime_simple (C++ with audio file saving)")
 message(STATUS "  - nvoiceai_realtime_simple_c (C API example)")
 message(STATUS "  - offline_audio_processor (batch processing)")
-if(SHERPA_ONNX_FOUND)
-    message(STATUS "  - nvoiceai_realtime_sherpa_asr (C++ with speech recognition)")
-    message(STATUS "  - nvoiceai_realtime_sherpa_asr_c (C-style with speech recognition)")
-endif()
+message(STATUS "  - nvoiceai_realtime_sherpa_asr (C++ with speech recognition)")
+message(STATUS "  - nvoiceai_realtime_sherpa_asr_c (C-style with speech recognition)")
 if(EXISTS "${CACTUS_NEEDLE_ROOT}/needle.h" AND EXISTS "${CACTUS_NEEDLE_ROOT}/libneedle.a")
     message(STATUS "  - nvoiceai_realtime_cactus_needle_asr (C API with streaming speech recognition)")
     message(STATUS "  - nvoiceai_realtime_cactus_needle_asr_fullduplex (C API, near+far ASR with 2-board GUI)")

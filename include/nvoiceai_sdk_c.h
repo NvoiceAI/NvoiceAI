@@ -6,7 +6,7 @@ extern "C" {
 #endif
 
 typedef void* nvoiceai_handle_t;
-typedef void (*nvoiceai_frame_cb_t)(const float* mic, const float* near, const float* far, const float* mix, size_t frameSize, void* user_data);
+typedef void (*nvoiceai_frame_cb_t)(const float* mic, const float* nearend, const float* farend, const float* mix, size_t frameSize, void* user_data);
 nvoiceai_handle_t nvoiceai_sdk_create(int sampleRate, int channels, int frameSize);
 
 // Create SDK using audio format (sample_rate/channels/frame_size) loaded from config.json.

@@ -328,21 +328,21 @@ static void flush_needle_chunk(void) {
     maybe_wrap_line();
 }
 
-/* NvoiceAI SDK frame callback: receives mic/near/far/mix audio frames in
+/* NvoiceAI SDK frame callback: receives mic/nearend/farend/mix audio frames in
  * real time. We only need the near-end (echo-cancelled) output for ASR. */
 static void capture_postprocess_callback(
     const float* mic,
-    const float* near,
-    const float* far,
+    const float* nearend,
+    const float* farend,
     const float* mix,
     size_t frameSize,
     void* user_data) {
     (void)mic;
-    (void)far;
+    (void)farend;
     (void)mix;
     (void)user_data;
 
-    if (!near) {
+    if (!nearend) {
         return;
     }
 
@@ -354,7 +354,7 @@ static void capture_postprocess_callback(
             skip_samples_remaining -= frameSize;
             return;
         }
-        near += skip_samples_remaining;
+        nearend += skip_samples_remaining;
         frameSize -= skip_samples_remaining;
         skip_samples_remaining = 0;
     }
@@ -364,7 +364,7 @@ static void capture_postprocess_callback(
         size_t space = (size_t)needle_chunk_samples - needle_buffer_count;
         size_t to_copy = (frameSize - offset < space) ? (frameSize - offset) : space;
 
-        memcpy(needle_buffer + needle_buffer_count, near + offset, to_copy * sizeof(float));
+        memcpy(needle_buffer + needle_buffer_count, nearend + offset, to_copy * sizeof(float));
         needle_buffer_count += to_copy;
         offset += to_copy;
 

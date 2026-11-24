@@ -16,18 +16,19 @@ if ($Help) {
     Write-Host "NvoiceAI Build Script for Windows" -ForegroundColor Cyan
     Write-Host ""
     Write-Host "Usage:" -ForegroundColor Yellow
-    Write-Host "  .\.\build.ps1 -VcpkgDir C:\path\to\vcpkg                # Incremental build (fast)" -ForegroundColor White
-    Write-Host "  .\.\build.ps1 -VcpkgDir C:\path\to\vcpkg -Clean         # Clean build (full rebuild)" -ForegroundColor White
-    Write-Host "  .\.\build.ps1 -VcpkgDir C:\path\to\vcpkg -BuildType Debug # Build in Debug mode" -ForegroundColor White
-    Write-Host "  .\.\build.ps1 -Help                                      # Show this help message" -ForegroundColor White
+    Write-Host "  .\build.ps1 -VcpkgDir C:\path\to\vcpkg                # Incremental build (fast)" -ForegroundColor White
+    Write-Host "  .\build.ps1 -VcpkgDir C:\path\to\vcpkg -Clean         # Clean build (full rebuild)" -ForegroundColor White
+    Write-Host "  .\build.ps1 -VcpkgDir C:\path\to\vcpkg -BuildType Debug # Build in Debug mode" -ForegroundColor White
+
+    Write-Host "  .\build.ps1 -Help                                      # Show this help message" -ForegroundColor White
     Write-Host ""
     Write-Host "Build Modes:" -ForegroundColor Yellow
     Write-Host "  (default)     Incremental build - only rebuilds changed files (fast)" -ForegroundColor White
     Write-Host "  -Clean        Clean build - removes build directory and rebuilds everything (slow)" -ForegroundColor White
     Write-Host ""
     Write-Host "Parameters:" -ForegroundColor Yellow
-    Write-Host "  -VcpkgDir <path>   Specify vcpkg root directory (required)" -ForegroundColor White
-    Write-Host "  -BuildType <type>   Build type: Release (default) or Debug" -ForegroundColor White
+    Write-Host "  -VcpkgDir <path>        Specify vcpkg root directory (required)" -ForegroundColor White
+    Write-Host "  -BuildType <type>       Build type: Release (default) or Debug" -ForegroundColor White
     Write-Host ""
     Write-Host "Environment Setup:" -ForegroundColor Yellow
     Write-Host "  - Requires CMake to be installed" -ForegroundColor White
@@ -174,11 +175,21 @@ Write-Host ""
 # Build the project
 Write-Host "Building project..." -ForegroundColor Blue
 Write-Host "  Building targets: nvoiceai_realtime_simple and offline_audio_processor" -ForegroundColor Yellow
+Write-Host "  Also building: nvoiceai_realtime_sherpa_asr and nvoiceai_realtime_sherpa_asr_c" -ForegroundColor Yellow
 Write-Host "  Note: nvoiceai_realtime_simple_c requires additional Windows compatibility work" -ForegroundColor Gray
 Write-Host "  Using parallel build for faster compilation..." -ForegroundColor Gray
 
 try {
-    & cmake --build . --config $BuildType --target nvoiceai_realtime_simple --target offline_audio_processor --parallel
+    $BuildTargets = @("nvoiceai_realtime_simple", "offline_audio_processor", "nvoiceai_realtime_sherpa_asr", "nvoiceai_realtime_sherpa_asr_c")
+    
+    $BuildArgs = @("--build", ".", "--config", $BuildType)
+    foreach ($target in $BuildTargets) {
+        $BuildArgs += "--target"
+        $BuildArgs += $target
+    }
+    $BuildArgs += "--parallel"
+    
+    & cmake @BuildArgs
 
     if ($LASTEXITCODE -ne 0) {
         Write-Host "Build failed!" -ForegroundColor Red
@@ -229,6 +240,19 @@ if ($ExeFiles.Count -gt 0) {
     else {
         Write-Host "  WARNING: No DLLs found in $LibDir" -ForegroundColor Yellow
     }
+    
+    # Sherpa-ONNX DLL deployment
+    Write-Host "  Copying Sherpa-ONNX runtime libraries..." -ForegroundColor Yellow
+    $SherpaLibDir = Join-Path $ScriptDir "third_party\sherpa-onnx-v2.0.1-win-x64-shared-MD-Release-lib\sherpa-onnx-v2.0.1-win-x64-shared-MD-Release-lib\lib"
+    $SherpaDlls = @(Get-ChildItem -Path $SherpaLibDir -Filter "*.dll" -ErrorAction SilentlyContinue)
+    foreach ($dll in $SherpaDlls) {
+        $destPath = Join-Path $ExeDir $dll.Name
+        Copy-Item -Path $dll.FullName -Destination $destPath -Force
+        Write-Host "    Copied $($dll.Name) to $ExeDir" -ForegroundColor Gray
+    }
+    if ($SherpaDlls.Count -gt 0) {
+        Write-Host "  Deployed $($SherpaDlls.Count) Sherpa-ONNX libraries" -ForegroundColor Green
+    }
 }
 else {
     Write-Host "  WARNING: nvoiceai_realtime_simple.exe not found. Skipping library deployment." -ForegroundColor Yellow
@@ -245,10 +269,7 @@ Write-Host "Build artifacts location:" -ForegroundColor Yellow
 Write-Host "  $BuildDir" -ForegroundColor White
 Write-Host ""
 Write-Host "To run the application, use:" -ForegroundColor Yellow
-$RunPath = $BuildDir + "\Release\nvoiceai_realtime_simple.exe"
-Write-Host "  $RunPath" -ForegroundColor White
-Write-Host ""
-Write-Host "Performance Tip:" -ForegroundColor Cyan
-Write-Host "  - Use incremental builds by default (fast - only rebuilds changed files)" -ForegroundColor White
-Write-Host "  - Use -Clean only when you need a fresh build (full rebuild)" -ForegroundColor White
+Write-Host "  $BuildDir\Release\nvoiceai_realtime_simple.exe" -ForegroundColor White
+Write-Host "  $BuildDir\Release\nvoiceai_realtime_sherpa_asr.exe" -ForegroundColor White
+Write-Host "  $BuildDir\Release\nvoiceai_realtime_sherpa_asr_c.exe" -ForegroundColor White
 Write-Host ""

@@ -3,7 +3,7 @@
 #include <functional>
 #include <string>
 
-using NvoiceAiFrameCallback = std::function<void(const float* mic, const float* near, const float* far, const float* mix, size_t frameSize, void* user_data)>;
+using NvoiceAiFrameCallback = std::function<void(const float* mic, const float* nearend, const float* farend, const float* mix, size_t frameSize, void* user_data)>;
 
 class NvoiceAiSdk {
 public:

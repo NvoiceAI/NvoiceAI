@@ -104,8 +104,8 @@ static void close_wav_files() {
 // Simple callback for processing audio frames
 static void capture_postprocess_callback(
     const float* mic,      // Microphone input
-    const float* near,     // Echo-cancelled near-end output
-    const float* far,      // Far-end (system audio) output
+    const float* nearend,  // Echo-cancelled near-end output
+    const float* farend,   // Far-end (system audio) output
     const float* mix,      // Mix of both near and far-end outputs
     size_t frameSize,      // Number of samples in one frame
     void* user_data)       // Custom user data pointer
@@ -116,11 +116,11 @@ static void capture_postprocess_callback(
     if (mic_file && mic) {
         sf_write_float(mic_file, mic, frameSize);
     }
-    if (near_file && near) {
-        sf_write_float(near_file, near, frameSize);
+    if (near_file && nearend) {
+        sf_write_float(near_file, nearend, frameSize);
     }
-    if (far_file && far) {
-        sf_write_float(far_file, far, frameSize);
+    if (far_file && farend) {
+        sf_write_float(far_file, farend, frameSize);
     }
     if (mix_file && mix) {
         sf_write_float(mix_file, mix, frameSize);

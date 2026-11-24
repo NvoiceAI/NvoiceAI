@@ -5,9 +5,18 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#ifndef _WIN32
 #include <unistd.h>
+#endif
 #include <time.h>
 #include <ctype.h>
+
+#ifdef _WIN32
+#include <windows.h>
+#define platform_sleep_ms(ms) Sleep(ms)
+#else
+#define platform_sleep_ms(ms) usleep((ms) * 1000)
+#endif
 
 #include "nvoiceai_sdk_c.h"
 #include "config_loader.h"
@@ -17,13 +26,14 @@
 
 // Global state for ASR
 static char last_text[1024] = {0};
+static char last_printed_text[1024] = {0};  // Track last printed text to avoid reprints
 static int32_t segment_index = 0;
 
 // Speech recognition callback - integrates ASR into audio processing pipeline
 static void capture_postprocess_callback(
     const float* mic,
-    const float* near,
-    const float* far,
+    const float* nearend,
+    const float* farend,
     const float* mix,
     size_t frames,
     void* user_data) {
@@ -35,41 +45,53 @@ static void capture_postprocess_callback(
     SherpaOnnxManager* asr_manager = (SherpaOnnxManager*)user_data;
     
     // Accept the processed near-end audio for speech recognition
-    asr_manager->AcceptWaveform(near, (int32_t)frames);
+    asr_manager->AcceptWaveform(nearend, (int32_t)frames);
     asr_manager->DecodeUntilReady();
     
     // Get current recognition result (GetResultText() returns std::string, call .c_str() for C API)
     std::string text = asr_manager->GetResultText();
     const char* text_cstr = text.c_str();
     
+    // Track the latest text, but don't print intermediate results
     if (text_cstr && text_cstr[0] != '\0' && strcmp(last_text, text_cstr) != 0) {
         strncpy(last_text, text_cstr, sizeof(last_text) - 1);
         last_text[sizeof(last_text) - 1] = '\0';
-        
-        // Convert to lowercase for display
-        char display_text[1024];
-        strncpy(display_text, text_cstr, sizeof(display_text) - 1);
-        display_text[sizeof(display_text) - 1] = '\0';
-        
-        for (char* p = display_text; *p; ++p) {
-            *p = tolower((unsigned char)*p);
-        }
-        
-        // Display recognition result
-        asr_manager->PrintDisplay(segment_index, display_text);
-        fflush(stderr);
     }
     
     // Check for endpoint (end of speech)
     if (asr_manager->IsEndpoint()) {
-        if (text_cstr && text_cstr[0] != '\0') {
+        // Only print the final result when speech ends (avoid printing intermediate partial results)
+        if (text_cstr && text_cstr[0] != '\0' && strcmp(text_cstr, last_printed_text) != 0) {
+            strncpy(last_printed_text, text_cstr, sizeof(last_printed_text) - 1);
+            last_printed_text[sizeof(last_printed_text) - 1] = '\0';
+            
+            // Convert to lowercase for display
+            char display_text[1024];
+            strncpy(display_text, text_cstr, sizeof(display_text) - 1);
+            display_text[sizeof(display_text) - 1] = '\0';
+            
+            for (char* p = display_text; *p; ++p) {
+                *p = tolower((unsigned char)*p);
+            }
+            
+            // Display recognition result only once per segment
+            asr_manager->PrintDisplay(segment_index, display_text);
+            fflush(stderr);
+            
             segment_index++;
         }
+        last_text[0] = '\0';  // Reset for next segment
         asr_manager->ResetStream();
     }
 }
 
 int main(int argc, char* argv[]) {
+    // Enable UTF-8 console output on Windows for Chinese character support
+#ifdef _WIN32
+    SetConsoleCP(65001);           // Set input code page to UTF-8
+    SetConsoleOutputCP(65001);     // Set output code page to UTF-8
+#endif
+
     printf("========================================\n");
     printf("NvoiceAI SDK Realtime Speech Recognition Demo (C API)\n");
     printf("========================================\n\n");
@@ -187,7 +209,7 @@ int main(int argc, char* argv[]) {
     int running = 1;
     
     while (running) {
-        usleep(DEMO_CHECK_INTERVAL_MS * 1000);  // Convert ms to microseconds
+        platform_sleep_ms(DEMO_CHECK_INTERVAL_MS);
         
         time_t elapsed = time(NULL) - start_time;
         if (elapsed >= DEMO_DURATION_SECONDS) {

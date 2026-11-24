@@ -5,6 +5,10 @@
 #include <algorithm>
 #include <mutex>
 
+#ifdef _WIN32
+#include <windows.h>
+#endif
+
 #include "NvoiceAiSdk.h"
 #include "ConfigLoader.h"
 #include "SherpaOnnxManager.h"
@@ -12,14 +16,15 @@
 
 // Global state for ASR
 static std::string last_text;
+static std::string last_printed_text;  // Track last printed text to avoid reprints
 static int32_t segment_index = 0;
 static std::mutex asr_mutex;
 
 // Speech recognition callback - integrates ASR into audio processing pipeline
 static void capture_postprocess_callback(
     const float* mic,
-    const float* near,
-    const float* far,
+    const float* nearend,
+    const float* farend,
     const float* mix,
     size_t frames,
     void* user_data) {
@@ -29,36 +34,47 @@ static void capture_postprocess_callback(
     SherpaOnnxManager* asr_manager = reinterpret_cast<SherpaOnnxManager*>(user_data);
     
     // Accept the processed near-end audio for speech recognition
-    asr_manager->AcceptWaveform(near, static_cast<int32_t>(frames));
+    asr_manager->AcceptWaveform(nearend, static_cast<int32_t>(frames));
     asr_manager->DecodeUntilReady();
     
     // Get current recognition result
     std::string text = asr_manager->GetResultText();
     
+    // Track the latest text, but don't print intermediate results
     if (!text.empty() && last_text != text) {
-        std::lock_guard<std::mutex> lock(asr_mutex);
-        last_text = text;
-        
-        // Convert to lowercase for display
-        std::string display_text = text;
-        std::transform(display_text.begin(), display_text.end(), display_text.begin(), 
-                      [](auto c) { return std::tolower(c); });
-        
-        // Display recognition result
-        asr_manager->PrintDisplay(segment_index, display_text.c_str());
-        fflush(stderr);
+        last_text = text;  // Update tracking without printing
     }
     
     // Check for endpoint (end of speech)
     if (asr_manager->IsEndpoint()) {
-        if (!text.empty()) {
+        // Only print the final result when speech ends (avoid printing intermediate partial results)
+        if (!text.empty() && text != last_printed_text) {
+            std::lock_guard<std::mutex> lock(asr_mutex);
+            last_printed_text = text;
+            
+            // Convert to lowercase for display
+            std::string display_text = text;
+            std::transform(display_text.begin(), display_text.end(), display_text.begin(), 
+                          [](auto c) { return std::tolower(c); });
+            
+            // Display recognition result only once per segment
+            asr_manager->PrintDisplay(segment_index, display_text.c_str());
+            fflush(stderr);
+            
             segment_index++;
         }
+        last_text.clear();  // Reset for next segment
         asr_manager->ResetStream();
     }
 }
 
 int main(int argc, char* argv[]) {
+    // Enable UTF-8 console output on Windows for Chinese character support
+#ifdef _WIN32
+    SetConsoleCP(65001);           // Set input code page to UTF-8
+    SetConsoleOutputCP(65001);     // Set output code page to UTF-8
+#endif
+
     std::cout << "========================================\n";
     std::cout << "NvoiceAI SDK Realtime Speech Recognition Demo C++\n";
     std::cout << "========================================\n\n";
@@ -117,9 +133,9 @@ int main(int argc, char* argv[]) {
     void* callback_user_data = sherpa_enabled ? asr_manager.get() : nullptr;
     
     // Create lambda wrapper for C++ API
-    NvoiceAiFrameCallback callback = [](const float* mic, const float* near, const float* far, 
+    NvoiceAiFrameCallback callback = [](const float* mic, const float* nearend, const float* farend, 
                                         const float* mix, size_t frames, void* user_data) {
-        capture_postprocess_callback(mic, near, far, mix, frames, user_data);
+        capture_postprocess_callback(mic, nearend, farend, mix, frames, user_data);
     };
     
     if (!sdk.start(callback, callback_user_data)) {

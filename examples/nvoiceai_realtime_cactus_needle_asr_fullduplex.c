@@ -570,8 +570,8 @@ static size_t skip_frames_remaining = 0;
 
 static void capture_postprocess_callback(
     const float* mic,
-    const float* near,
-    const float* far,
+    const float* nearend,
+    const float* farend,
     const float* mix,
     size_t frameSize,
     void* user_data) {
@@ -586,17 +586,17 @@ static void capture_postprocess_callback(
             skip_frames_remaining -= frameSize;
             return;
         }
-        if (near) near += skip_frames_remaining;
-        if (far)  far  += skip_frames_remaining;
+        if (nearend) nearend += skip_frames_remaining;
+        if (farend)  farend  += skip_frames_remaining;
         frameSize -= skip_frames_remaining;
         skip_frames_remaining = 0;
     }
 
-    if (near) {
-        channel_feed(&chan_near, near, frameSize);
+    if (nearend) {
+        channel_feed(&chan_near, nearend, frameSize);
     }
-    if (far) {
-        channel_feed(&chan_far, far, frameSize);
+    if (farend) {
+        channel_feed(&chan_far, farend, frameSize);
     }
 }
 
